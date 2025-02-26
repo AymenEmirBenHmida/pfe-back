@@ -8,6 +8,7 @@ node_modules/
 dist/
 authentication
 authentication2
+.env
 # Compiled Java class files
 *.class
 
