@@ -2,7 +2,9 @@
 /dist
 /node_modules
 /build
-
+gateway
+authentication
+authentication2
 # Logs
 logs
 *.log

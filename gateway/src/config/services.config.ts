@@ -19,4 +19,10 @@ export const servicesConfig: ServiceRegistry = {
     port: parseInt(process.env.ORDER_SERVICE_PORT || '3003'),
     healthCheck: '/health',
   },
+  users: {
+    name: 'User Service',
+    url: process.env.USER_SERVICE_URL || 'http://localhost',
+    port: parseInt(process.env.USER_SERVICE_PORT || '3004'),
+    healthCheck: '/health',
+  },
 };
