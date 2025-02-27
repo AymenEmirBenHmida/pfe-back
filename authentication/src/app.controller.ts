@@ -1,12 +1,75 @@
-import { Controller, Get } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Res,
+  Req,
+  UnauthorizedException,
+  Logger,
+} from '@nestjs/common';
+import { Response, Request } from 'express';
 import { AppService } from './app.service';
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  private readonly logger = new Logger(AppController.name);
 
-  @Get()
-  getHello(): string {
-    return this.appService.getHello();
+  constructor(private readonly authenticationService: AppService) {}
+
+  @Post('login')
+  async login(
+    @Body() credentials: { email: string; password: string },
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    this.logger.log(`Login attempt for user: ${credentials.email}`);
+    try {
+      const result = await this.authenticationService.login(
+        credentials,
+        response,
+      );
+      this.logger.log(`Login successful for user: ${credentials.email}`);
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `Login failed for user: ${credentials.email}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
+
+  @Post('register')
+  async register(@Body() userData: any) {
+    this.logger.log(`Registration attempt for user: ${userData.email}`);
+    try {
+      const result = await this.authenticationService.register(userData);
+      this.logger.log(`Registration successful for user: ${userData.email}`);
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `Registration failed for user: ${userData.email}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
+
+  @Post('validate-token')
+  async validateToken(@Req() request: Request) {
+    this.logger.log('Token validation request received');
+    const token = request.headers.authorization?.split(' ')[1];
+    if (!token) {
+      this.logger.warn('Token validation failed: No token provided');
+      throw new UnauthorizedException('No token provided');
+    }
+
+    try {
+      const user = await this.authenticationService.validateToken(token);
+      this.logger.log(`Token validated successfully for user: ${user}`);
+      return { valid: true, user };
+    } catch (error) {
+      this.logger.error('Token validation failed', error.stack);
+      throw error;
+    }
   }
 }
