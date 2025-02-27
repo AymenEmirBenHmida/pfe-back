@@ -8,7 +8,7 @@ import * as bcrypt from 'bcryptjs';
 import { GetUserDto } from './dto/get-user.dto';
 
 @Injectable()
-export class  UserService {
+export class UserService {
   constructor(
     @InjectRepository(User) private usersRepository: Repository<User>,
   ) {}
@@ -19,15 +19,19 @@ export class  UserService {
     });
     return await this.usersRepository.save(createdUser);
   }
+  // Add this missing method
+  async findByEmail(email: string): Promise<User | null> {
+    return await this.usersRepository.findOne({ where: { email } });
+  }
 
   //checks the user availability and the correctness of the password
-  async verifyUser(email: string, password:string){
+  async verifyUser(email: string, password: string) {
     //get the user by his email
-    const user = await this.usersRepository.findOne({where:{email}});
+    const user = await this.usersRepository.findOne({ where: { email } });
     //test the users availability and the correctness of the password
-    if(user && await bcrypt.compare(password, user.password)){
+    if (user && (await bcrypt.compare(password, user.password))) {
       return user;
-    }else{
+    } else {
       throw new UnauthorizedException('Credentials are not valid.');
     }
   }
@@ -63,7 +67,9 @@ export class  UserService {
     return await this.usersRepository.remove(userToBeDeleted);
   }
 
-  async getUser(getUserDto:GetUserDto){
-    return await this.usersRepository.findOne({where:{...getUserDto,id:+getUserDto.id}});
+  async getUser(getUserDto: GetUserDto) {
+    return await this.usersRepository.findOne({
+      where: { ...getUserDto, id: +getUserDto.id },
+    });
   }
 }

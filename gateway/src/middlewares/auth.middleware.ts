@@ -1,25 +1,32 @@
-// gateway/src/middlewares/auth.middleware.ts
+import { HttpService } from '@nestjs/axios';
 import {
   Injectable,
   NestMiddleware,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
-import axios from 'axios';
+
+import { ServiceRegistryService } from 'src/services/service-registry.service';
+import { firstValueFrom } from 'rxjs';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthMiddleware implements NestMiddleware {
-  private publicPaths = ['/auth/login', '/auth/register', '/health', '/'];
+  private publicPaths = ['/auth/login', '/auth/register', '/health'];
 
-  constructor() {}
+  constructor(
+    private httpService: HttpService,
+    private serviceRegistry: ServiceRegistryService,
+    private configService: ConfigService,
+  ) {}
 
   async use(req: Request, res: Response, next: NextFunction) {
     // Skip authentication for public routes
-    if (this.isPublicPath(req.path)) {
+    if (this.isPublicPath(req.baseUrl)) {
       return next();
     }
 
-    // Get token from Authorization header
+    // Get token from Authorization header or cookies
     const token = this.extractToken(req);
     if (!token) {
       return res
@@ -28,35 +35,56 @@ export class AuthMiddleware implements NestMiddleware {
     }
 
     try {
+      // Get auth service URL dynamically from registry
+      const authServiceUrl = this.serviceRegistry.getServiceUrl('auth');
+
+      if (!authServiceUrl) {
+        console.error('Auth service not available in registry');
+        return res
+          .status(503)
+          .json({ message: 'Authentication service unavailable' });
+      }
+
       // Validate token using auth service
-      const response = await axios.post(
-        'http://localhost:3001/validate-token',
-        {},
-        { headers: { Authorization: `Bearer ${token}` } },
+      const response = await firstValueFrom(
+        this.httpService.post(
+          `${authServiceUrl}/validate-token`,
+          {},
+          { headers: { Authorization: `Bearer ${token}` } },
+        ),
       );
 
       // Attach user data to request for downstream services
       req['user'] = response.data.user;
 
       // Add user data as headers for microservices
-      req.headers['x-user-id'] = response.data.user.id.toString();
+      req.headers['x-user-id'] = response.data.user.userId.toString();
       req.headers['x-user-role'] = response.data.user.role || 'user';
 
       next();
     } catch (error) {
+      console.error('Auth validation error:', error.message);
       return res.status(401).json({ message: 'Unauthorized - Invalid token' });
     }
   }
 
   private isPublicPath(path: string): boolean {
-    return this.publicPaths.some((publicPath) => path.includes(publicPath));
+    return this.publicPaths.some((publicPath) => path.startsWith(publicPath));
   }
 
   private extractToken(req: Request): string | null {
+    // Try to get from Authorization header
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return null;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      return authHeader.substring(7);
     }
-    return authHeader.substring(7);
+
+    // Otherwise try to get from cookies
+    const cookieToken = req.cookies?.Authentication;
+    if (cookieToken) {
+      return cookieToken;
+    }
+
+    return null;
   }
 }

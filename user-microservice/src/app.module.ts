@@ -5,8 +5,8 @@ import { AppService } from './app.service';
 import * as Joi from 'joi';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { join } from 'path';
-import { UserService } from './user/user.service';
 import { UserModule } from './user/user.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -23,6 +23,7 @@ import { UserModule } from './user/user.module';
         DB_PASSWORD: Joi.string().required(),
         DB_NAME: Joi.string().required(),
         PORT: Joi.number().required(),
+        KAFKA_BROKERS: Joi.string().default('localhost:9092'), // Add this line
       }),
     }),
     TypeOrmModule.forRootAsync({
@@ -41,6 +42,7 @@ import { UserModule } from './user/user.module';
         synchronize: true,
       }),
     }),
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
