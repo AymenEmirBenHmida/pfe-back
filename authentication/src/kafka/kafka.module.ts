@@ -16,7 +16,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
             client: {
               clientId: 'authentication',
               brokers: configService
-                .get('KAFKA_BROKERS', 'kafka:9092')
+                .get('KAFKA_BROKERS', 'localhost:29092')
                 .split(','),
               // Add retry configuration
               retry: {

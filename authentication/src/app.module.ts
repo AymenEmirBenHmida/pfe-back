@@ -1,10 +1,8 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { join } from 'path';
 import * as Joi from 'joi';
 import { LocalStrategy } from './strategies/local.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
@@ -23,7 +21,7 @@ import { KafkaModule } from './kafka/kafka.module';
         DB_PASSWORD: Joi.string().required(),
         DB_NAME: Joi.string().required(),
         PORT: Joi.number().required(),
-        KAFKA_BROKERS: Joi.string().default('kafka:9092'),
+        KAFKA_BROKERS: Joi.string().default('localhost:29092'),
       }),
     }),
     //setting up the jwt module and getting env variables
@@ -37,23 +35,7 @@ import { KafkaModule } from './kafka/kafka.module';
         },
       }),
     }),
-    //setting up the typeorm module and getting env variables
-    TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      //configure the connection to the database
-      useFactory: (ConfigService: ConfigService) => ({
-        type: 'postgres',
-        host: ConfigService.get('DB_HOST'),
-        port: +ConfigService.get('DB_PORT'),
-        username: ConfigService.get('DB_USERNAME'),
-        password: ConfigService.get('DB_PASSWORD'),
-        database: ConfigService.get('DB_NAME'),
-        entities: [join(process.cwd(), 'dist/**/*.entity.js')],
-        //I will not use  synchronize true in production
-        synchronize: true,
-      }),
-    }),
+    
     KafkaModule,
   ],
   controllers: [AppController],

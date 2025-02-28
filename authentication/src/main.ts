@@ -19,7 +19,9 @@ async function bootstrap() {
     options: {
       client: {
         clientId: 'authentication',
-        brokers: configService.get('KAFKA_BROKERS', 'kafka:9092').split(','),
+        brokers: configService
+          .get('KAFKA_BROKERS', 'localhost:29092')
+          .split(','),
       },
       consumer: {
         groupId: 'auth-consumer',
