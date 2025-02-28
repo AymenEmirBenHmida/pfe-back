@@ -168,4 +168,75 @@ export class KafkaService implements OnModuleInit {
       return { success: false, error: 'Service unavailable' };
     }
   }
+
+  async getUserIdByEmail(email: string) {
+    this.logger.debug(`Getting user ID for email: ${email}`);
+    try {
+      const result = await firstValueFrom(
+        this.kafkaClient.send('user.info.getId', { email }).pipe(
+          timeout(10000),
+          catchError((err) => {
+            this.logger.error(`Kafka error: ${err.message}`, err.stack);
+            return of({ exists: false, error: 'Service unavailable' });
+          }),
+        ),
+      );
+      return result; // Should return {exists: boolean, userId: string}
+    } catch (error) {
+      this.logger.error(`Error getting user ID: ${error.message}`, error.stack);
+      return { exists: false, error: 'Service unavailable' };
+    }
+  }
+
+  async sendPasswordResetEmail(email: string, token: string) {
+    this.logger.debug(`Requesting password reset email for a user`);
+    try {
+      const result = await firstValueFrom(
+        this.kafkaClient
+          .send('notification.email.passwordReset', {
+            email,
+            token,
+            resetUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${token}`,
+          })
+          .pipe(
+            timeout(10000),
+            catchError((err) => {
+              this.logger.error(`Kafka error: ${err.message}`, err.stack);
+              return of({ sent: false, error: 'Service unavailable' });
+            }),
+          ),
+      );
+      return result;
+    } catch (error) {
+      this.logger.error(`Error sending email: ${error.message}`, error.stack);
+      return { sent: false, error: 'Service unavailable' };
+    }
+  }
+
+  async updateUserPasswordById(userId: string, newPassword: string) {
+    this.logger.debug(`Updating password for user ID: ${userId}`);
+    try {
+      const result = await firstValueFrom(
+        this.kafkaClient
+          .send('user.password.updateById', {
+            userId,
+            password: newPassword,
+          })
+          .pipe(
+            timeout(10000),
+            catchError((err) => {
+              this.logger.error(`Kafka error: ${err.message}`, err.stack);
+              return of({ success: false, error: 'Service unavailable' });
+            }),
+          ),
+      );
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `Error updating password: ${error.message}`,
+        error.stack,
+      );
+      return { success: false, error: 'Service unavailable' };
+    }
+  }
 }
