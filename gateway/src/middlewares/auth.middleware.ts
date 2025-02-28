@@ -2,7 +2,6 @@ import { HttpService } from '@nestjs/axios';
 import {
   Injectable,
   NestMiddleware,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 
@@ -17,7 +16,6 @@ export class AuthMiddleware implements NestMiddleware {
   constructor(
     private httpService: HttpService,
     private serviceRegistry: ServiceRegistryService,
-    private configService: ConfigService,
   ) {}
 
   async use(req: Request, res: Response, next: NextFunction) {

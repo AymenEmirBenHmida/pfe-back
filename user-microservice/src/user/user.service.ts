@@ -9,6 +9,7 @@ import { GetUserDto } from './dto/get-user.dto';
 
 @Injectable()
 export class UserService {
+  logger: any;
   constructor(
     @InjectRepository(User) private usersRepository: Repository<User>,
   ) {}
@@ -71,5 +72,29 @@ export class UserService {
     return await this.usersRepository.findOne({
       where: { ...getUserDto, id: +getUserDto.id },
     });
+  }
+  async findUserByEmail(email: string) {
+    return this.usersRepository.findOne({ where: { email } });
+  }
+
+  async updatePassword(userId: string, password: string) {
+    try {
+      const user = await this.usersRepository.findOne({
+        where: { id: +userId },
+      });
+
+      if (!user) {
+        return { success: false, error: 'User not found' };
+      }
+
+      // Hash password with bcrypt
+      const hashedPassword = await bcrypt.hash(password, 10);
+      await this.usersRepository.update(user.id, { password: hashedPassword });
+
+      return { success: true };
+    } catch (error) {
+      this.logger.error(`Failed to update password: ${error.message}`);
+      return { success: false, error: 'Internal server error' };
+    }
   }
 }
