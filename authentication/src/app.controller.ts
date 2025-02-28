@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { Response, Request } from 'express';
 import { AppService } from './app.service';
+import { ForgotPasswordDto, ResetPasswordDto } from './dto/password-reset.dto';
 
 @Controller()
 export class AppController {
@@ -71,5 +72,24 @@ export class AppController {
       this.logger.error('Token validation failed', error.stack);
       throw error;
     }
+  }
+
+  @Post('forgot-password')
+  async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
+    this.logger.log(
+      `Password reset request received for: ${forgotPasswordDto.email}`,
+    );
+    return this.authenticationService.requestPasswordReset(
+      forgotPasswordDto.email,
+    );
+  }
+
+  @Post('reset-password')
+  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
+    this.logger.log('Password reset execution request received');
+    return this.authenticationService.resetPassword(
+      resetPasswordDto.token,
+      resetPasswordDto.password,
+    );
   }
 }

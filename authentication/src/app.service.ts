@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { Response } from 'express';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -7,6 +7,7 @@ import { KafkaService } from './kafka/kafka.service';
 
 @Injectable()
 export class AppService {
+  private readonly logger = new Logger(AppService.name);
   constructor(
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
@@ -100,6 +101,74 @@ export class AppService {
       };
     } catch (error) {
       throw new UnauthorizedException('Invalid token');
+    }
+  }
+
+  async requestPasswordReset(email: string) {
+    this.logger.debug(`Processing password reset request for ${email}`);
+
+    try {
+      const resetResponse = await this.kafkaService.requestPasswordReset(email);
+
+      if (!resetResponse.success) {
+        this.logger.warn(
+          `Password reset failed for ${email}: ${resetResponse.error}`,
+        );
+        return {
+          success: false,
+          message: resetResponse.error || 'Unable to process reset request',
+        };
+      }
+
+      return {
+        success: true,
+        message:
+          'If your email exists in our system, you will receive password reset instructions.',
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error in password reset: ${error.message}`,
+        error.stack,
+      );
+      return {
+        success: false,
+        message: 'Service unavailable, please try again later',
+      };
+    }
+  }
+
+  async resetPassword(token: string, newPassword: string) {
+    this.logger.debug('Processing password reset with token');
+
+    try {
+      const resetResponse = await this.kafkaService.resetPassword(
+        token,
+        newPassword,
+      );
+
+      if (!resetResponse.success) {
+        this.logger.warn(
+          `Password reset token validation failed: ${resetResponse.error}`,
+        );
+        return {
+          success: false,
+          message: resetResponse.error || 'Invalid or expired reset token',
+        };
+      }
+
+      return {
+        success: true,
+        message: 'Password has been successfully reset',
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error in password reset: ${error.message}`,
+        error.stack,
+      );
+      return {
+        success: false,
+        message: 'Service unavailable, please try again later',
+      };
     }
   }
 }

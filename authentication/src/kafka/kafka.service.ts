@@ -15,6 +15,8 @@ export class KafkaService implements OnModuleInit {
     const topics = [
       'user.authentication.validate',
       'user.authentication.create',
+      'user.authentication.requestReset',
+      'user.authentication.resetPassword',
     ];
     topics.forEach((topic) => this.kafkaClient.subscribeToResponseOf(topic));
     await this.kafkaClient.connect();
@@ -98,5 +100,72 @@ export class KafkaService implements OnModuleInit {
       userId,
       timestamp: new Date().toISOString(),
     });
+  }
+
+  async requestPasswordReset(email: string) {
+    this.logger.debug(`Sending password reset request for ${email}`);
+    try {
+      const result = await firstValueFrom(
+        this.kafkaClient
+          .send('user.authentication.requestReset', {
+            email,
+            timestamp: new Date().toISOString(),
+          })
+          .pipe(
+            timeout(10000),
+            catchError((err) => {
+              this.logger.error(
+                `Kafka reset request error: ${err.message}`,
+                err.stack,
+              );
+              return of({ success: false, error: 'Service unavailable' });
+            }),
+          ),
+      );
+      this.logger.debug(
+        `Received reset request response: ${JSON.stringify(result)}`,
+      );
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `Error requesting password reset: ${error.message}`,
+        error.stack,
+      );
+      return { success: false, error: 'Service unavailable' };
+    }
+  }
+
+  async resetPassword(token: string, newPassword: string) {
+    this.logger.debug(`Sending password reset execution`);
+    try {
+      const result = await firstValueFrom(
+        this.kafkaClient
+          .send('user.authentication.resetPassword', {
+            token,
+            newPassword,
+            timestamp: new Date().toISOString(),
+          })
+          .pipe(
+            timeout(10000),
+            catchError((err) => {
+              this.logger.error(
+                `Kafka reset execution error: ${err.message}`,
+                err.stack,
+              );
+              return of({ success: false, error: 'Service unavailable' });
+            }),
+          ),
+      );
+      this.logger.debug(
+        `Received reset execution response: ${JSON.stringify(result)}`,
+      );
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `Error executing password reset: ${error.message}`,
+        error.stack,
+      );
+      return { success: false, error: 'Service unavailable' };
+    }
   }
 }
