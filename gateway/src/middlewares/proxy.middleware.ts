@@ -54,7 +54,6 @@ export class ProxyMiddleware implements NestMiddleware {
             }
           },
         },
-
         // Configure dynamic routing based on destination URL
         router: async (req) => {
           return destinationUrl;

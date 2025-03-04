@@ -1,8 +1,18 @@
-import { Injectable, Inject, OnModuleInit, Logger, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  OnModuleInit,
+  Logger,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ClientKafka } from '@nestjs/microservices';
 import { UserService } from '../user/user.service';
 import * as bcrypt from 'bcryptjs';
 
+/**
+ * Service handling authentication operations and Kafka communication
+ * Manages user validation, creation, and related auth operations
+ */
 @Injectable()
 export class AuthService implements OnModuleInit {
   private readonly logger = new Logger(AuthService.name);
@@ -12,6 +22,10 @@ export class AuthService implements OnModuleInit {
     @Inject('KAFKA_SERVICE') private readonly kafkaClient: ClientKafka,
   ) {}
 
+  /**
+   * Initializes Kafka connections and topic subscriptions
+   * Called when the module is initialized
+   */
   async onModuleInit() {
     this.logger.log('Registering as consumer for Kafka topics');
 
@@ -19,6 +33,10 @@ export class AuthService implements OnModuleInit {
     const requiredTopics = [
       'user.authentication.validate',
       'user.authentication.create',
+      'user.authentication.requestReset',
+      'user.authentication.resetPassword',
+      'user.info.getId',
+      'user.password.updateById',
     ];
 
     requiredTopics.forEach((topic) => {
@@ -37,18 +55,22 @@ export class AuthService implements OnModuleInit {
     }
   }
 
+  /**
+   * Validates user credentials against stored data
+   * @returns Object with validation result and user data if valid
+   */
   async validateUser(email: string, password: string): Promise<any> {
     this.logger.debug(`Validating user: ${email}`);
     try {
       const user = await this.userService.findByEmail(email);
-      
+
       if (!user) {
         this.logger.debug(`User not found: ${email}`);
         return { valid: false };
       }
 
       const passwordValid = await this.verifyPassword(password, user.password);
-      
+
       if (!passwordValid) {
         this.logger.debug(`Invalid password for user: ${email}`);
         return { valid: false };
@@ -67,39 +89,53 @@ export class AuthService implements OnModuleInit {
     }
   }
 
-  private async verifyPassword(plainPassword: string, hashedPassword: string): Promise<boolean> {
+  /**
+   * Verifies if plain password matches hashed password
+   * @returns Boolean indicating if passwords match
+   */
+  private async verifyPassword(
+    plainPassword: string,
+    hashedPassword: string,
+  ): Promise<boolean> {
     return await bcrypt.compare(plainPassword, hashedPassword);
   }
 
+  /**
+   * Creates a new user with encrypted password
+   * @throws Error if user already exists
+   * @returns Newly created user object
+   */
   async createUser(userData: any) {
     const { email, password } = userData;
-    
+
     // Check if user exists
     const existingUser = await this.userService.findByEmail(email);
     if (existingUser) {
       throw new Error('User with this email already exists');
     }
-    
+
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
-    
+
     // Create new user
     const newUser = await this.userService.create({
       email,
       password: hashedPassword,
-      name:""
-    //   role: userData.role || 'user',
+      name: '',
+      //   role: userData.role || 'user',
     });
-    
+
     return newUser;
   }
 
-  // Method to publish user events
+  /**
+   * Publishes events to Kafka topics
+   * Adds timestamp to event data for tracking
+   */
   async publishUserEvent(topic: string, data: any) {
     return this.kafkaClient.emit(topic, {
       ...data,
       timestamp: new Date().toISOString(),
     });
   }
-  
 }

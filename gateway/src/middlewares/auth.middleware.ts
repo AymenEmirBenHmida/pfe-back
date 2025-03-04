@@ -1,8 +1,5 @@
 import { HttpService } from '@nestjs/axios';
-import {
-  Injectable,
-  NestMiddleware,
-} from '@nestjs/common';
+import { Injectable, NestMiddleware } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 
 import { ServiceRegistryService } from 'src/services/service-registry.service';
@@ -11,7 +8,13 @@ import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthMiddleware implements NestMiddleware {
-  private publicPaths = ['/auth/login', '/auth/register', '/health'];
+  private publicPaths = [
+    '/auth/login',
+    '/auth/register',
+    '/health',
+    '/auth/forgot-password',
+    '/auth/reset-password',
+  ];
 
   constructor(
     private httpService: HttpService,
@@ -65,11 +68,11 @@ export class AuthMiddleware implements NestMiddleware {
       return res.status(401).json({ message: 'Unauthorized - Invalid token' });
     }
   }
-
+  //Test if a path is public or not
   private isPublicPath(path: string): boolean {
     return this.publicPaths.some((publicPath) => path.startsWith(publicPath));
   }
-
+  //Extract token from request
   private extractToken(req: Request): string | null {
     // Try to get from Authorization header
     const authHeader = req.headers.authorization;
