@@ -105,10 +105,12 @@ export class PasswordService {
       resetToken.used = true;
       await this.resetRepository.save(resetToken);
 
-      // Update password in user service via Kafka using userId
-      const result = await this.kafkaService.updateUserPasswordById(
-        resetToken.userId,
+      // Send reset password request to user microservice
+      // Pass the token, new password, and userId
+      const result = await this.kafkaService.resetPassword(
+        token,
         newPassword,
+        resetToken.userId,
       );
 
       if (!result.success) {
@@ -131,6 +133,34 @@ export class PasswordService {
         success: false,
         message: 'Service temporarily unavailable',
       };
+    }
+  }
+  // Add this method if it doesn't exist
+  async storeResetToken(userId: string, token: string) {
+    try {
+      // Create expiration date (1 hour from now)
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 1);
+
+      // Create new password reset token
+      const resetToken = this.resetRepository.create({
+        userId,
+        token,
+        expiresAt,
+        used: false,
+      });
+
+      // Save to database
+      await this.resetRepository.save(resetToken);
+
+      this.logger.debug(`Reset token stored for user: ${userId}`);
+      return true;
+    } catch (error) {
+      this.logger.error(
+        `Failed to store reset token: ${error.message}`,
+        error.stack,
+      );
+      throw error;
     }
   }
 }

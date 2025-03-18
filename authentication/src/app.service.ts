@@ -4,6 +4,8 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { TokenPayload } from './interfaces/token-payload.interface';
 import { KafkaService } from './kafka/kafka.service';
+import { PasswordService } from './passwordReset/reset-password.service';
+import { RefreshTokenService } from './refreshToken/refresh-token.service';
 
 @Injectable()
 export class AppService {
@@ -12,6 +14,8 @@ export class AppService {
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
     private readonly kafkaService: KafkaService,
+    private readonly passwordService: PasswordService,
+    private readonly refreshTokenService: RefreshTokenService,
   ) {}
 
   async login(
@@ -33,27 +37,67 @@ export class AppService {
       const tokenPayload: TokenPayload = {
         userId: userResponse.userId,
         role: userResponse.role || 'user',
+        type: 'access', // Set a specific token type
+      };
+      // Create refresh token with longer expiration
+      const refreshTokenPayload: TokenPayload = {
+        userId: userResponse.userId,
+        role: userResponse.role || 'user',
+        type: 'refresh',
       };
 
+      // Set expiration for JWT access
       const expires = new Date();
       expires.setSeconds(
         expires.getSeconds() + this.configService.get('JWT_EXPIRATION'),
       );
 
-      const token = this.jwtService.sign(tokenPayload);
-
-      // Set cookie
-      response.cookie('Authentication', token, {
+      // Set refresh token expiration (longer than access token) Default 7 days
+      const refreshExpiration = this.configService.get<number>(
+        'JWT_REFRESH_EXPIRATION',
+        604800,
+      );
+      const refreshExpires = new Date();
+      refreshExpires.setSeconds(
+        refreshExpires.getSeconds() + refreshExpiration,
+      );
+      // Access token creation
+      const accessToken = this.jwtService.sign(tokenPayload);
+      // Refresh token creation
+      const refreshToken = this.jwtService.sign(refreshTokenPayload, {
+        expiresIn:
+          this.configService.get('JWT_REFRESH_EXPIRATION', 604800) + 's', // Default 7 days
+      });
+      // Store refresh token in database
+      await this.refreshTokenService.saveRefreshToken(
+        userResponse.userId,
+        refreshToken,
+        refreshExpiration,
+      );
+      // Set access token in cookie
+      response.cookie('Authentication', accessToken, {
         httpOnly: true,
         expires,
+        sameSite: 'lax',
+      });
+
+      // Set refresh token in cookie
+      response.cookie('RefreshToken', refreshToken, {
+        httpOnly: true,
+        expires: refreshExpires,
+        sameSite: 'lax',
       });
 
       // Emit login event
       await this.kafkaService.emitUserLoggedIn(userResponse.userId);
 
       return {
-        userId: userResponse.userId,
-        token,
+        user: {
+          userId: userResponse.userId,
+          role: userResponse.role,
+          email: userResponse.email,
+          name: userResponse.name,
+        },
       };
     } catch (error) {
       throw new UnauthorizedException('Authentication failed');
@@ -109,6 +153,18 @@ export class AppService {
 
     try {
       const resetResponse = await this.kafkaService.requestPasswordReset(email);
+      // Step 2: Store token in password reset entity (using Password Service)
+      // This is assuming your PasswordService has a storeResetToken method
+      await this.passwordService.storeResetToken(
+        resetResponse.userId,
+        resetResponse.token,
+      );
+
+      // Step 3: Send email with reset link via notification microservice
+      const emailResult = await this.kafkaService.sendPasswordResetEmail(
+        email,
+        resetResponse.token,
+      );
 
       if (!resetResponse.success) {
         this.logger.warn(
@@ -124,41 +180,6 @@ export class AppService {
         success: true,
         message:
           'If your email exists in our system, you will receive password reset instructions.',
-      };
-    } catch (error) {
-      this.logger.error(
-        `Error in password reset: ${error.message}`,
-        error.stack,
-      );
-      return {
-        success: false,
-        message: 'Service unavailable, please try again later',
-      };
-    }
-  }
-
-  async resetPassword(token: string, newPassword: string) {
-    this.logger.debug('Processing password reset with token');
-
-    try {
-      const resetResponse = await this.kafkaService.resetPassword(
-        token,
-        newPassword,
-      );
-
-      if (!resetResponse.success) {
-        this.logger.warn(
-          `Password reset token validation failed: ${resetResponse.error}`,
-        );
-        return {
-          success: false,
-          message: resetResponse.error || 'Invalid or expired reset token',
-        };
-      }
-
-      return {
-        success: true,
-        message: 'Password has been successfully reset',
       };
     } catch (error) {
       this.logger.error(

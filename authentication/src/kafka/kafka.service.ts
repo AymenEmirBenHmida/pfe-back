@@ -17,6 +17,9 @@ export class KafkaService implements OnModuleInit {
       'user.authentication.create',
       'user.authentication.requestReset',
       'user.authentication.resetPassword',
+      'user.info.getId',
+      'user.password.updateById',
+      'notification.email.passwordReset',
     ];
     topics.forEach((topic) => this.kafkaClient.subscribeToResponseOf(topic));
     await this.kafkaClient.connect();
@@ -125,6 +128,7 @@ export class KafkaService implements OnModuleInit {
       this.logger.debug(
         `Received reset request response: ${JSON.stringify(result)}`,
       );
+
       return result;
     } catch (error) {
       this.logger.error(
@@ -135,7 +139,7 @@ export class KafkaService implements OnModuleInit {
     }
   }
 
-  async resetPassword(token: string, newPassword: string) {
+  async resetPassword(token: string, newPassword: string, userId?: string) {
     this.logger.debug(`Sending password reset execution`);
     try {
       const result = await firstValueFrom(
@@ -143,6 +147,7 @@ export class KafkaService implements OnModuleInit {
           .send('user.authentication.resetPassword', {
             token,
             newPassword,
+            userId, // Pass userId if available
             timestamp: new Date().toISOString(),
           })
           .pipe(
@@ -196,7 +201,7 @@ export class KafkaService implements OnModuleInit {
           .send('notification.email.passwordReset', {
             email,
             token,
-            resetUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${token}`,
+            resetUrl: `${process.env.FRONTEND_URL || 'http://localhost:3002'}/reset-password?token=${token}`,
           })
           .pipe(
             timeout(10000),
