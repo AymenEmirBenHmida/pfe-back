@@ -11,7 +11,7 @@ node_modules/
 dist/
 authentication
 authentication2
-gateway
+
 .env
 # Compiled Java class files
 *.class

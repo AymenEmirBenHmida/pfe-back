@@ -37,6 +37,8 @@ export class ProxyMiddleware implements NestMiddleware {
       // Configure proxy middleware with request handling
       const proxy = createProxyMiddleware({
         target: targetUrl,
+        changeOrigin: true,
+        cookieDomainRewrite: '', // Rewrite cookie domain to client domain
         on: {
           // Configure request interceptor for header and body management
           proxyReq: (proxyReq, req: Request) => {
@@ -45,12 +47,26 @@ export class ProxyMiddleware implements NestMiddleware {
               proxyReq.setHeader('Authorization', req.headers.authorization);
             }
 
+            // Forward cookies - CRITICAL ADDITION
+            if (req.headers.cookie) {
+              proxyReq.setHeader('Cookie', req.headers.cookie);
+            }
+
             // Handle POST/PUT request body forwarding
             if (req.body && Object.keys(req.body).length) {
               const bodyData = JSON.stringify(req.body);
               proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
               proxyReq.setHeader('Content-Type', 'application/json');
               proxyReq.write(bodyData);
+            }
+          },
+
+          // Add response interceptor to handle Set-Cookie headers
+          proxyRes: (proxyRes, req, res) => {
+            // Forward Set-Cookie headers from services to client
+            const setCookieHeaders = proxyRes.headers['set-cookie'];
+            if (setCookieHeaders) {
+              res.setHeader('Set-Cookie', setCookieHeaders);
             }
           },
         },

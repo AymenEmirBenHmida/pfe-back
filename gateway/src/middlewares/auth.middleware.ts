@@ -1,10 +1,8 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable, NestMiddleware } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
-
 import { ServiceRegistryService } from 'src/services/service-registry.service';
 import { firstValueFrom } from 'rxjs';
-import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthMiddleware implements NestMiddleware {
@@ -14,6 +12,7 @@ export class AuthMiddleware implements NestMiddleware {
     '/health',
     '/auth/forgot-password',
     '/auth/reset-password',
+    '/auth/refresh-token',
   ];
 
   constructor(
@@ -54,9 +53,6 @@ export class AuthMiddleware implements NestMiddleware {
           { headers: { Authorization: `Bearer ${token}` } },
         ),
       );
-
-      // Attach user data to request for downstream services
-      req['user'] = response.data.user;
 
       // Add user data as headers for microservices
       req.headers['x-user-id'] = response.data.user.userId.toString();

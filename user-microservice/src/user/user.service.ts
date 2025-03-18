@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -20,8 +24,9 @@ export class UserService {
     });
     return await this.usersRepository.save(createdUser);
   }
-  // Add this missing method
+
   async findByEmail(email: string): Promise<User | null> {
+    console.log(email);
     return await this.usersRepository.findOne({ where: { email } });
   }
 
@@ -37,13 +42,13 @@ export class UserService {
     }
   }
 
+  //find all users
   async findAll() {
-    //find all users
     return await this.usersRepository.find();
   }
 
+  //find one user by his id
   async findOne(id: number) {
-    //find one user by his id
     return this.usersRepository.findOne({ where: { id } });
   }
 

@@ -77,10 +77,13 @@ export class AuthService implements OnModuleInit {
       }
 
       this.logger.debug(`Authentication successful for: ${email}`);
+
+      // Might have to edit this weather the name is always present andw hen to add the company name
       return {
         valid: true,
         userId: user.id,
         email: user.email,
+        name: user.name,
         role: user.role,
       };
     } catch (error) {
@@ -114,13 +117,10 @@ export class AuthService implements OnModuleInit {
       throw new Error('User with this email already exists');
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
     // Create new user
     const newUser = await this.userService.create({
       email,
-      password: hashedPassword,
+      password: password,
       name: '',
       //   role: userData.role || 'user',
     });

@@ -16,7 +16,11 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger: ['error', 'warn', 'log', 'debug', 'verbose'],
   });
-
+  //enabel cors for the frontend to be able to access the backend
+  app.enableCors({
+    origin: ['http://localhost:3000', 'http://localhost:3002'], // Add your frontend URLs
+    credentials: true, // CRITICAL for cookies to work!
+  });
   // Get configuration service instance to access environment variables
   const configService = app.get(ConfigService);
   const kafkaBrokers = configService.get('KAFKA_BROKERS', 'localhost:29092');

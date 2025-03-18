@@ -6,10 +6,11 @@ import * as events from 'events';
 
 async function bootstrap() {
   // Increase Node.js EventEmitter max listeners to avoid warnings
-  events.setMaxListeners(20);
+  events.setMaxListeners(30);
   const app = await NestFactory.create(AppModule);
   // Add cookie parser middleware
   app.use(cookieParser());
+
   // Enable CORS for frontend requests
   app.enableCors({
     origin: true, // Allow all origins or specify your frontend URL
