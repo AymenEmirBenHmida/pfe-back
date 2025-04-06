@@ -13,7 +13,8 @@ pnpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
-
+# Do not upload files in uplods profiles
+/uploads/profiles/*
 # OS
 .DS_Store
 

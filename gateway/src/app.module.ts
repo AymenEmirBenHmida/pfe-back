@@ -1,7 +1,5 @@
 import { ConfigModule } from '@nestjs/config';
 import { MiddlewareConsumer, Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { ProxyMiddleware } from './middlewares/proxy.middleware';
 import { ServiceRegistryService } from './services/service-registry.service';
 import { AuthMiddleware } from './middlewares/auth.middleware';
@@ -16,8 +14,7 @@ import { HttpModule } from '@nestjs/axios';
     }),
     HttpModule, // Add this line to import HttpModule
   ],
-  controllers: [AppController],
-  providers: [AppService, ServiceRegistryService],
+  providers: [ServiceRegistryService],
 })
 export class AppModule {
   configure(consumer: MiddlewareConsumer) {

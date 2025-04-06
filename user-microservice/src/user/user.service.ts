@@ -1,5 +1,7 @@
+import { ImageService } from './../image/image.service';
 import {
   Injectable,
+  Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -16,6 +18,7 @@ export class UserService {
   logger: any;
   constructor(
     @InjectRepository(User) private usersRepository: Repository<User>,
+    private imageService: ImageService,
   ) {}
   async create(createUserDto: CreateUserDto) {
     const createdUser = this.usersRepository.create({
@@ -55,12 +58,21 @@ export class UserService {
   async update(id: number, updateUserDto: UpdateUserDto) {
     //find the user to be updated
     const toBeUpdatedUser = await this.findOne(id);
+    // Delete the old image if it exists
+    if (
+      toBeUpdatedUser?.profileImageUrl &&
+      updateUserDto.profileImageUrl !== toBeUpdatedUser.profileImageUrl
+    ) {
+      const oldImagePath = toBeUpdatedUser.profileImageUrl;
+      this.imageService.deletImage(oldImagePath);
+    }
     //if not found throw exception
     if (!toBeUpdatedUser) {
       throw new NotFoundException();
     }
     //assign the value of the sent user to the user to be returned
     Object.assign(toBeUpdatedUser, updateUserDto);
+    Logger.log(toBeUpdatedUser);
     //save the updated user and return him
     return await this.usersRepository.save(toBeUpdatedUser);
   }
@@ -99,6 +111,23 @@ export class UserService {
       return { success: true };
     } catch (error) {
       this.logger.error(`Failed to update password: ${error.message}`);
+      return { success: false, error: 'Internal server error' };
+    }
+  }
+
+  async updateProfileImage(userId: string, imagePath: string) {
+    try {
+      const user = await this.usersRepository.findOne({
+        where: { id: +userId },
+      });
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+      user.profileImageUrl = imagePath;
+      await this.usersRepository.save(user);
+      return { success: true };
+    } catch (error) {
+      this.logger.error(`Failed to update profile image: ${error.message}`);
       return { success: false, error: 'Internal server error' };
     }
   }

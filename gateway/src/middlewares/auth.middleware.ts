@@ -13,6 +13,7 @@ export class AuthMiddleware implements NestMiddleware {
     '/auth/forgot-password',
     '/auth/reset-password',
     '/auth/refresh-token',
+    
   ];
 
   constructor(

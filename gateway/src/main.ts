@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import * as cookieParser from 'cookie-parser';
 import { ConfigService } from '@nestjs/config';
 import * as events from 'events';
+import { HttpExceptionFilter } from './filters/http-exception.filter';
 
 async function bootstrap() {
   // Increase Node.js EventEmitter max listeners to avoid warnings
@@ -23,6 +24,8 @@ async function bootstrap() {
   // Start the gateway service
   const port = configService.get('PORT') || 3000;
   await app.listen(port);
+  // Use Http exception filter
+  app.useGlobalFilters(new HttpExceptionFilter());
   console.log(`API Gateway running on port ${port}`);
 }
 bootstrap();

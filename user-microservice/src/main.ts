@@ -3,6 +3,10 @@ import { AppModule } from './app.module';
 import { Transport } from '@nestjs/microservices';
 import { ConfigService } from '@nestjs/config';
 import { Logger } from '@nestjs/common';
+import { HttpExceptionFilter } from './filters/http-exception.filter';
+import { join } from 'path';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { existsSync } from 'fs';
 
 /**
  * Bootstrap function to initialize and start the NestJS application
@@ -10,22 +14,37 @@ import { Logger } from '@nestjs/common';
  */
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
-
   // Initialize NestJS application with full logging enabled
   // This helps with debugging and monitoring application behavior
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger: ['error', 'warn', 'log', 'debug', 'verbose'],
   });
-  //enabel cors for the frontend to be able to access the backend
+
+  // Enable CORS for frontend access
   app.enableCors({
-    origin: ['http://localhost:3000', 'http://localhost:3002'], // Add your frontend URLs
+    origin: ['http://localhost:3000', 'http://localhost:3002'], // Allowed frontend URLs
     credentials: true, // CRITICAL for cookies to work!
   });
-  // Get configuration service instance to access environment variables
-  const configService = app.get(ConfigService);
-  const kafkaBrokers = configService.get('KAFKA_BROKERS', 'localhost:29092');
 
+  // Get ConfigService instance
+  const configService = app.get(ConfigService);
+  const kafkaBrokers = configService.get<string>(
+    'KAFKA_BROKERS',
+    'localhost:29092',
+  );
+  console.log(`Kafka Brokers: ${kafkaBrokers}`);
+app.use('/uploads', (req, res, next) => {
+  req.url = req.url.replace(/\/+$/, ''); // Remove trailing slashes
+  console.log('Cleaned request path:', req.url);
+  next();
+});
+  // Serve static files from the uploads directory with /uploads prefix
+  app.useStaticAssets(join(process.cwd(), 'uploads'), {
+    prefix: '/uploads',
+  });
+  console.log('Serving static files from:', join(process.cwd(), 'uploads'));
   logger.log(`Configuring Kafka microservice with brokers: ${kafkaBrokers}`);
+  
 
   // Configure Kafka microservice connection
   // This sets up the application as a Kafka consumer/producer
@@ -46,7 +65,8 @@ async function bootstrap() {
       },
     },
   });
-
+  // Use Http exception filter
+  app.useGlobalFilters(new HttpExceptionFilter());
   logger.log('Starting microservices...');
   await app.startAllMicroservices();
   logger.log('Microservices started successfully');

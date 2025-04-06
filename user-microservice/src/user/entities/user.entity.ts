@@ -46,4 +46,8 @@ export class User {
     nullable: true,
   })
   role: Role;
+
+  @Column({nullable:true})
+  profileImageUrl: string;
+  
 }
