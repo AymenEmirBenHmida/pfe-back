@@ -3,11 +3,16 @@
 # Learn more about .gitignore:
 #     https://www.atlassian.com/git/tutorials/saving-changes/gitignore
 
+
+.env
+
 # Node artifact files
 node_modules/
 dist/
 authentication
 authentication2
+
+.env
 # Compiled Java class files
 *.class
 

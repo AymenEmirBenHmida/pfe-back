@@ -27,6 +27,7 @@ export class ServiceRegistryService {
 
   // Gets the URL for a specific service by name
   getServiceUrl(serviceName: string): string | undefined {
+    console.log(this.serviceMap);
     return this.serviceMap[serviceName];
   }
 

@@ -1,0 +1,10 @@
+services:
+  postgresql:
+      image: postgres
+      restart: always
+      environment:
+        - POSTGRES_USER=aymen
+        - POSTGRES_PASSWORD=azert12345
+        - POSTGRES_DB=authenticationDb
+      ports:
+        - "5432:5432"
