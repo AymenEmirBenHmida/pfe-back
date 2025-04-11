@@ -6,7 +6,6 @@ import { Logger } from '@nestjs/common';
 import { HttpExceptionFilter } from './filters/http-exception.filter';
 import { join } from 'path';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { existsSync } from 'fs';
 
 /**
  * Bootstrap function to initialize and start the NestJS application

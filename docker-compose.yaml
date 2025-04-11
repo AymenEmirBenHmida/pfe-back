@@ -1,0 +1,64 @@
+services:
+  # authentication:
+  #   depends_on:
+  #     - postgresql
+  #     - kafka
+  #   build:
+  #     context: ./authentication
+  #     dockerfile: Dockerfile
+  #     target: development
+  #   command: npx nest start --watch authentication
+  #   ports:
+  #     - "3001:3005"
+  #   env_file:
+  #     - ./authentication/.env
+  #   volumes:
+  #     - ./authentication:/authentication
+  #   networks:
+  #     - app-network
+  #   environment:
+  #     KAFKA_BROKERS: kafka:9092
+  #     KAFKAJS_NO_PARTITIONER_WARNING: 1
+
+  # postgresql:
+  #   image: postgres
+  #   restart: always
+  #   environment:
+  #     POSTGRES_USER: aymen
+  #     POSTGRES_PASSWORD: azert12345
+  #     POSTGRES_DB: authenticationDb
+  #   ports:
+  #     - "5432:5432"
+  #   networks:
+  #     - app-network
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - app-network
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092" # Internal Kafka port
+      - "29092:29092" # Port for external clients
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

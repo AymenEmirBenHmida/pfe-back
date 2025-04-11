@@ -84,6 +84,7 @@ export class PasswordService {
           used: false,
         },
       });
+      console.log('token', token);
 
       // Invalid token
       if (!resetToken) {
