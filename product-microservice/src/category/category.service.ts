@@ -27,6 +27,10 @@ export class CategoryService {
     if (!category) {
       throw new NotFoundException(`Category with ID ${id} not found`);
     }
+    // Step 1.5: Delete the existing image if there's any
+    if (category.imageId) {
+      await this.fileService.deleteFile(category.imageId);
+    }
 
     // Step 2: Save the uploaded file metadata
     const savedFile = await this.fileService.saveFileMetadata(
@@ -43,7 +47,7 @@ export class CategoryService {
     // Step 4: Persist the updated category
     const updatedCategory = await this.categoriesRepository.save(category);
 
-    return updatedCategory;
+    return {...updatedCategory,image:savedFile};
   }
 
   async findAll() {
@@ -51,15 +55,45 @@ export class CategoryService {
 
     const enriched = await Promise.all(
       categories.map(async (category) => {
-        const images = await this.fileService.getFiles('Category', category.id);
+        const image = await this.fileService.getFiles('Category', category.id);
         return {
           ...category,
-          images,
+          image,
         };
       }),
     );
 
     return enriched;
+  }
+  
+  async findAllFiltered(query: {
+    name?: string;
+    isActive?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    const { name, isActive, page = 1, limit = 10 } = query;
+
+    const qb = this.categoriesRepository.createQueryBuilder('category');
+
+    if (name) {
+      qb.andWhere('category.name ILIKE :name', { name: `%${name}%` });
+    }
+
+    if (isActive !== undefined) {
+      qb.andWhere('category.isActive = :isActive', { isActive: isActive === 'true' });
+    }
+
+    qb.skip((page - 1) * limit).take(limit);
+
+    const [data, total] = await qb.getManyAndCount();
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+    };
   }
 
   // Find category by ID with image
@@ -71,49 +105,52 @@ export class CategoryService {
     }
 
     // Retrieve the image related to the category
-    const images = await this.fileService.getFiles('Category', category.id);
+    const image = await this.fileService.getFileWithId(category.id);
     return {
       ...category,
-      images,
+      image,
     };
   }
   // Update category
   async update(
     id: number,
     updateCategoryDto: UpdateCategoryDto,
-    image: Express.Multer.File,
+    // image: Express.Multer.File,
   ) {
     const categoryToBeUpdated = await this.findOne(id);
-    const uploadPath = this.configService.get('UPLOAD_PATH')! + 'categories';
+    // const uploadPath = this.configService.get('UPLOAD_PATH')! + 'categories';
 
     if (!categoryToBeUpdated) {
       throw new NotFoundException(`Category with ID ${id} not found`);
     }
 
-    // If the update contains a new image, handle it
-    if (image) {
-      // Step 1: Delete the existing image if there's any
-      if (categoryToBeUpdated.imageId) {
-        await this.fileService.deleteFile(categoryToBeUpdated.imageId);
-      }
+    // // If the update contains a new image, handle it
+    // if (image) {
+    //   // Step 1: Delete the existing image if there's any
+    //   if (categoryToBeUpdated.imageId) {
+    //     await this.fileService.deleteFile(categoryToBeUpdated.imageId);
+    //   }
 
-      // Step 2: Save the uploaded file metadata
-      const savedFile = await this.fileService.saveFileMetadata(
-        image.filename,
-        `${uploadPath}/${id}/${image.filename}`,
-        image.mimetype,
-        'Category',
-        id,
-      );
-      // Step 3: Assign the new image (assuming image contains a valid file ID)
-      categoryToBeUpdated.imageId = savedFile.id;
-    }
+    //   // Step 2: Save the uploaded file metadata
+    //   const savedFile = await this.fileService.saveFileMetadata(
+    //     image.filename,
+    //     `${uploadPath}/${id}/${image.filename}`,
+    //     image.mimetype,
+    //     'Category',
+    //     id,
+    //   );
+    //   // Step 3: Assign the new image (assuming image contains a valid file ID)
+    //   categoryToBeUpdated.imageId = savedFile.id;
+    // }
 
     // Update the rest of the category details
     Object.assign(categoryToBeUpdated, updateCategoryDto);
-
-    // Step 3: Save the updated category
-    return this.categoriesRepository.save(categoryToBeUpdated);
+    // Retrieve the image related to the category
+    const image = await this.fileService.getFileWithId(categoryToBeUpdated.id);
+      // Step 3: Save the updated category
+    const updatedCtagory = await this.categoriesRepository.save(categoryToBeUpdated);
+  
+    return {...updatedCtagory,image};
   }
 
   // Delete category by ID and remove associated image

@@ -9,6 +9,7 @@ import {
   UploadedFile,
   UseInterceptors,
   UploadedFiles,
+  Query,
 } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -41,8 +42,26 @@ export class ProductController {
   }
 
   @Get()
-  findAll() {
-    return this.productService.findAll();
+  findAll(
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+    @Query('search') search: string,
+    @Query('category') category: string,
+    @Query('minPrice') minPrice: string,
+    @Query('maxPrice') maxPrice: string,
+    @Query('characteristics') characteristics: string, // Pass as JSON string
+  ) {
+    return this.productService.findAllFilter({
+      page: Number(page) || 1,
+      limit: Number(limit) || 10,
+      search,
+      category,
+      minPrice: minPrice ? parseFloat(minPrice) : undefined,
+      maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
+      characteristics: characteristics
+        ? JSON.parse(characteristics)
+        : undefined,
+    });
   }
 
   @Get(':id')
@@ -51,13 +70,8 @@ export class ProductController {
   }
 
   @Patch(':id')
-  @UseInterceptors(FileInterceptor('productImages'))
-  update(
-    @Param('id') id: string,
-    @Body() updateProductDto: UpdateProductDto,
-    @UploadedFile() files?: Express.Multer.File[],
-  ) {
-    return this.productService.update(+id, updateProductDto, files);
+  update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
+    return this.productService.update(+id, updateProductDto);
   }
 
   @Delete(':id')

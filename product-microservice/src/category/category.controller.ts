@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UploadedFile, UseInterceptors } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UploadedFile,
+  UseInterceptors,
+  Query,
+} from '@nestjs/common';
 import { CategoryService } from './category.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
@@ -22,9 +33,23 @@ export class CategoryController {
     return this.categoryService.uploadCategoryImage(+id, image);
   }
 
+  // @Get()
+  // findAll() {
+  //   return this.categoryService.findAll();
+  // }
   @Get()
-  findAll() {
-    return this.categoryService.findAll();
+  findAll(
+    @Query('name') name?: string,
+    @Query('isActive') isActive?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.categoryService.findAllFiltered({
+      name,
+      isActive,
+      page: page ? parseInt(page) : undefined,
+      limit: limit ? parseInt(limit) : undefined,
+    });
   }
 
   @Get(':id')
@@ -37,9 +62,9 @@ export class CategoryController {
   update(
     @Param('id') id: string,
     @Body() updateCategoryDto: UpdateCategoryDto,
-    @UploadedFile() image: Express.Multer.File,
+    // @UploadedFile() image: Express.Multer.File,
   ) {
-    return this.categoryService.update(+id, updateCategoryDto,image);
+    return this.categoryService.update(+id, updateCategoryDto);
   }
 
   @Delete(':id')

@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { File } from './entities/file.entity';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -44,7 +44,7 @@ export class FileService {
         { isMain: false }, // Make the current file not the main one
       );
     }
-
+    Logger.log('options ', options);
     // Create new File instance and set its properties
     const file = new File();
     file.filename = filename;
@@ -122,6 +122,20 @@ export class FileService {
   async getFiles(entityType: string, entityId: number): Promise<File[]> {
     return this.fileRepository.find({
       where: { entityType, entityId },
+    });
+  }
+  async getFilesWithIds(ids: number[]): Promise<File[]> {
+    return this.fileRepository.find({
+      where: {
+        id: In(ids), // convert to number if your ID is a number
+      },
+    });
+  }
+  async getFileWithId(id: number): Promise<File|null> {
+    return this.fileRepository.findOne({
+      where: {
+        id,
+      },
     });
   }
   findAll() {

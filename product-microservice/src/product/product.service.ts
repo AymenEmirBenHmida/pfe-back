@@ -35,7 +35,6 @@ export class ProductService {
     // files: savedFiles,
   }
   async uploadProductImages(
-    // createProductDto: CreateProductDto,
     productId: number,
     files: Express.Multer.File[],
     imageList: AddProductImagesDto,
@@ -45,46 +44,41 @@ export class ProductService {
     });
     if (!product) throw new NotFoundException();
 
-    const uploadPath = this.configService.get('UPLOAD_PATH')! + '/products';
-    console.log(files);
-    const orderedFileIds: number[] = [];
-    console.log('imageList = ', imageList);
-    console.log('productId = ', productId);
-    let fileIndex = 0;
     imageList.images =
       typeof imageList.images === 'string'
         ? JSON.parse(imageList.images)
         : imageList.images;
-    console.log('image list length ', imageList.images.length);
+
+    const allImagesWithIds: { order: number; id: number }[] = [];
+    let fileIndex = 0;
+
     for (const image of imageList.images) {
-      console.log(fileIndex);
       if (image.isOld && image.id) {
-        orderedFileIds.push(image.id);
+        allImagesWithIds.push({ order: image.order, id: image.id });
       } else {
-        const uploadedFile = files[fileIndex];
-        fileIndex++;
-        console.log('uploaded file :', uploadedFile);
+        const uploadedFile = files[fileIndex++];
         const saved = await this.fileService.saveFileMetadata(
           uploadedFile.filename,
           uploadedFile.path,
           uploadedFile.mimetype,
-          (typeof product).toString(),
+          'Product',
           productId,
-          {order:image.order}
+          { order: image.order },
         );
-        orderedFileIds.push(saved.id);
+        allImagesWithIds.push({ order: image.order, id: saved.id });
       }
     }
 
-    // Clean up removed old files
+    // Sort all images by order before saving
+    const orderedFileIds = allImagesWithIds
+      .sort((a, b) => a.order - b.order)
+      .map((img) => img.id);
+
+    // Remove old files that are not in the new list
     const previousIds = product.files || [];
     const removed = previousIds.filter((fid) => !orderedFileIds.includes(+fid));
     for (const idToRemove of removed) {
-      await this.fileService.deleteFileAndFolder(
-        +idToRemove,
-        productId,
-        'products',
-      );
+      await this.fileService.deleteFile(+idToRemove);
     }
 
     product.files = orderedFileIds.map(String);
@@ -96,7 +90,9 @@ export class ProductService {
     if (!products) throw new NotFoundException();
     const enriched = await Promise.all(
       products.map(async (product) => {
-        const images = await this.fileService.getFiles('Product', product.id);
+        const images = await this.fileService.getFilesWithIds(
+          product.files.map(Number),
+        );
         return {
           ...product,
           images,
@@ -106,11 +102,77 @@ export class ProductService {
 
     return enriched;
   }
+  async findAllFilter({
+    page,
+    limit,
+    search,
+    category,
+    minPrice,
+    maxPrice,
+    characteristics,
+  }: {
+    page: number;
+    limit: number;
+    search?: string;
+    category?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    characteristics?: Record<string, string>;
+  }) {
+    const query = this.productsRepository.createQueryBuilder('product');
+
+    if (search) {
+      query.andWhere('product.name ILIKE :search', { search: `%${search}%` });
+    }
+
+    if (category) {
+      query.andWhere('product.categoryId = :category', {
+        category: Number(category),
+      });
+    }
+
+    if (minPrice !== undefined) {
+      query.andWhere('product.price >= :minPrice', { minPrice });
+    }
+
+    if (maxPrice !== undefined) {
+      query.andWhere('product.price <= :maxPrice', { maxPrice });
+    }
+
+    if (characteristics) {
+      for (const [key, value] of Object.entries(characteristics)) {
+        query.andWhere(
+          `product.characteristics ->> :key_${key} ILIKE :val_${key}`,
+          {
+            [`key_${key}`]: key,
+            [`val_${key}`]: `%${value}%`,
+          },
+        );
+      }
+    }
+
+    query.skip((page - 1) * limit).take(limit);
+
+    const [items, total] = await query.getManyAndCount();
+
+    return {
+      data: items,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
 
   async findOne(id: number) {
     const product = await this.productsRepository.findOne({ where: { id } });
     if (!product) throw new NotFoundException();
-    const images = await this.fileService.getFiles('Product', product.id);
+
+    const imageIds = product.files?.map(Number) || [];
+    const images = await this.fileService.getFilesWithIds(imageIds);
+
+    // Optional: Remove file IDs from the response if you don't want to expose them
+
     return {
       ...product,
       images,
@@ -133,12 +195,12 @@ export class ProductService {
       let savedFiles = this.fileService.saveMultipleFilesMetaData(
         images,
         toBeUpdatedProduct!.id + '',
-        uploadPath + '/products',
+        uploadPath + 'products',
         'Product',
       );
       return {
         ...updatedProduct,
-        files: savedFiles,
+        images: savedFiles,
       };
     }
     return {
