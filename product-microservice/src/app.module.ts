@@ -8,6 +8,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { join } from 'path';
 import { CategoryModule } from './category/category.module';
 import { FileModule } from './file/file.module';
+import { CartModule } from './cart/cart.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { FileModule } from './file/file.module';
     }),
     CategoryModule,
     FileModule,
+    CartModule,
   ],
   controllers: [AppController],
   providers: [AppService],

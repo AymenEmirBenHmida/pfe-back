@@ -1,14 +1,12 @@
 import { Category } from 'src/category/entities/category.entity';
-import { File } from 'src/file/entities/file.entity';
 import {
   Column,
   CreateDateColumn,
   Entity,
   JoinColumn,
   ManyToOne,
-  OneToMany,
   PrimaryGeneratedColumn,
-  UpdateDateColumn,
+  UpdateDateColumn
 } from 'typeorm';
 @Entity({ name: 'product' })
 export class Product {

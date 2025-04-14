@@ -110,6 +110,8 @@ export class ProductService {
     minPrice,
     maxPrice,
     characteristics,
+    sortBy = 'createdAt',
+    sortOrder = 'DESC', // Default: latest products
   }: {
     page: number;
     limit: number;
@@ -118,9 +120,10 @@ export class ProductService {
     minPrice?: number;
     maxPrice?: number;
     characteristics?: Record<string, string>;
+    sortBy?: string;
+    sortOrder?: string;
   }) {
     const query = this.productsRepository.createQueryBuilder('product');
-
     if (search) {
       query.andWhere('product.name ILIKE :search', { search: `%${search}%` });
     }
@@ -150,13 +153,24 @@ export class ProductService {
         );
       }
     }
+  query.orderBy(`product.${sortBy}`, sortOrder.toUpperCase() as 'ASC' | 'DESC');
 
     query.skip((page - 1) * limit).take(limit);
 
     const [items, total] = await query.getManyAndCount();
-
+    const enriched = await Promise.all(
+      items.map(async (product) => {
+        const images = await this.fileService.getFilesWithIds(
+          product.files.map(Number),
+        );
+        return {
+          ...product,
+          images,
+        };
+      }),
+    );
     return {
-      data: items,
+      data: enriched,
       total,
       page,
       limit,

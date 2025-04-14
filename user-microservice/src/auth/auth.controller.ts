@@ -75,6 +75,19 @@ export class AuthController {
       return { exists: false, error: 'Failed to retrieve user information' };
     }
   }
+  @MessagePattern('user.info.getById')
+  async getUserById(@Payload() data: { id: string }) {
+    try {
+      const user = await this.userService.findOne(+data.id);
+      if (!user) return null;
+
+      const { password, ...userInfo } = user;
+      return userInfo;
+    } catch (error) {
+      this.logger.error(`Failed to get user ID: ${error.message}`);
+      return { exists: false, error: 'Failed to retrieve user information' };
+    }
+  }
 
   /**
    * Updates user password by user ID

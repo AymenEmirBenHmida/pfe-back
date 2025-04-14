@@ -10,12 +10,15 @@ import {
   UseInterceptors,
   UploadedFiles,
   Query,
+  Logger,
+  Req,
 } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { AddProductImagesDto } from './dto/add-product-images.dto';
+import { Request } from 'express';
 
 @Controller('product')
 export class ProductController {
@@ -43,6 +46,8 @@ export class ProductController {
 
   @Get()
   findAll(
+    @Req() request: Request,
+
     @Query('page') page: string,
     @Query('limit') limit: string,
     @Query('search') search: string,
@@ -50,6 +55,8 @@ export class ProductController {
     @Query('minPrice') minPrice: string,
     @Query('maxPrice') maxPrice: string,
     @Query('characteristics') characteristics: string, // Pass as JSON string
+    @Query('sortBy') sortBy: string,
+    @Query('sortOrder') sortOrder: string,
   ) {
     return this.productService.findAllFilter({
       page: Number(page) || 1,
@@ -61,6 +68,7 @@ export class ProductController {
       characteristics: characteristics
         ? JSON.parse(characteristics)
         : undefined,
+        
     });
   }
 
