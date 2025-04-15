@@ -8,6 +8,7 @@ import { FileModule } from 'src/file/file.module';
 @Module({
   controllers: [ProductController],
   providers: [ProductService],
-  imports: [TypeOrmModule.forFeature([Product]),FileModule],
+  imports: [TypeOrmModule.forFeature([Product]), FileModule],
+  exports: [ProductService],
 })
 export class ProductModule {}

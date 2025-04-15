@@ -28,7 +28,7 @@ export class ProductController {
   create(@Body() createProductDto: CreateProductDto) {
     return this.productService.create(createProductDto);
   }
-  // Gotta fiw up that whe there is a problem the file is still ssaved
+  // Gotta fiw up that when there is a problem the file is still saved
   @Post(':id/images')
   @UseInterceptors(FilesInterceptor('productImages'))
   addProductImages(

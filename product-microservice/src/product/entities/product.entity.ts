@@ -6,7 +6,7 @@ import {
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
-  UpdateDateColumn
+  UpdateDateColumn,
 } from 'typeorm';
 @Entity({ name: 'product' })
 export class Product {
@@ -30,7 +30,9 @@ export class Product {
   description: string;
   @Column()
   categoryId: number;
-  @ManyToOne(() => Category, (category) => category.products)
+  @ManyToOne(() => Category, (category) => category.products, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'categoryId' })
   category: Category;
   // Add virtual relation to files

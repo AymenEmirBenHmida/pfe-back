@@ -7,10 +7,15 @@ import { AddItemDto } from './dto/add-item.dto';
 @Controller('cart')
 export class CartController {
   constructor(private readonly cartService: CartService) {}
-  // In cart.controller.ts
-  @Post(':userId/items')
+  // Update ,Delete or Add by batch
+  @Post(":userId/items")
+  handleItems(@Param("userId") userId:string,@Body() body:AddItemDto[]){
+    return this.cartService.handleItems(userId,body);
+  }
+
+  @Post(':userId/item')
   addItem(@Param('userId') userId: string, @Body() body: AddItemDto) {
-    return this.cartService.addItem(userId, body.productId, body.quantity);
+    return this.cartService.addItemPlusCheck(userId, body.productId, body.quantity);
   }
 
   @Delete(':userId/items/:productId')
@@ -20,10 +25,15 @@ export class CartController {
   ) {
     return this.cartService.removeItem(userId, productId);
   }
+  // Get a cart by the user id
+  @Get(':userId')
+  getCart(@Param('userId') userId: number) {
+    return this.cartService.getCartByUser(userId.toString());
+  }
 
   @Post()
   create(@Body() createCartDto: CreateCartDto) {
-    return this.cartService.create(createCartDto);
+    return this.cartService.createCart(createCartDto);
   }
 
   @Get()

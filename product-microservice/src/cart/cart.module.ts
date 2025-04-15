@@ -6,6 +6,8 @@ import { Cart } from './entities/cart.entity';
 import { CartItem } from './entities/cart-item.entity';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ProductModule } from 'src/product/product.module';
+import { ProductService } from 'src/product/product.service';
 
 @Module({
   imports: [
@@ -38,6 +40,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         }),
       },
     ]),
+    ProductModule,
   ],
   controllers: [CartController],
   providers: [CartService],

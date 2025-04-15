@@ -6,6 +6,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CartItem } from './entities/cart-item.entity';
 import { ClientKafka } from '@nestjs/microservices';
+import { AddItemDto } from './dto/add-item.dto';
+import { ProductService } from 'src/product/product.service';
 
 @Injectable()
 export class CartService implements OnModuleInit {
@@ -13,6 +15,7 @@ export class CartService implements OnModuleInit {
     @InjectRepository(Cart) private cartRepo: Repository<Cart>,
     @InjectRepository(CartItem) private itemRepo: Repository<CartItem>,
     @Inject('KAFKA_SERVICE') private readonly kafkaClient: ClientKafka,
+    private productService: ProductService,
   ) {}
   async onModuleInit() {
     this.kafkaClient.subscribeToResponseOf('user.info.getById');
@@ -20,18 +23,37 @@ export class CartService implements OnModuleInit {
   }
 
   async getUserInfo(userId: number) {
-    return this.kafkaClient.send('user.info.getById', { id: userId }).toPromise();
+    return this.kafkaClient
+      .send('user.info.getById', { id: userId })
+      .toPromise();
   }
   async getCartByUser(userId: string): Promise<Cart> {
-    let cart = await this.cartRepo.findOne({ where: { userId } });
+    let cart = await this.cartRepo.findOne({
+      where: { userId },
+      relations: ['items'],
+    });
+
     if (!cart) {
       cart = this.cartRepo.create({ userId, items: [] });
       await this.cartRepo.save(cart);
+      return cart;
     }
-    return cart;
+
+    // Populate product data for each cart item
+    const itemsWithProduct = await Promise.all(
+      cart.items.map(async (cartItem) => {
+        const product = await this.productService.findOne(
+          Number(cartItem.productId),
+        );
+        return { ...cartItem, product };
+      }),
+    );
+
+    // Return updated cart with product data
+    return { ...cart, items: itemsWithProduct };
   }
 
-  async addItem(
+  async addItemPlusCheck(
     userId: string,
     productId: string,
     quantity: number,
@@ -54,6 +76,26 @@ export class CartService implements OnModuleInit {
 
     return this.getCartByUser(userId);
   }
+  async addItem(
+    userId: string,
+    productId: string,
+    quantity: number,
+    cart: Cart,
+  ): Promise<CartItem> {
+    const existingItem = cart.items.find(
+      (item) => item.productId === productId,
+    );
+
+    if (existingItem) {
+      existingItem.quantity += quantity;
+      return await this.itemRepo.save(existingItem);
+    } else {
+      const newItem = this.itemRepo.create({ productId, quantity, cart });
+      return await this.itemRepo.save(newItem);
+    }
+
+    // return this.getCartByUser(userId);
+  }
 
   async removeItem(userId: string, productId: string): Promise<Cart> {
     const cart = await this.getCartByUser(userId);
@@ -61,8 +103,15 @@ export class CartService implements OnModuleInit {
     await this.cartRepo.save(cart);
     return this.getCartByUser(userId);
   }
-  create(createCartDto: CreateCartDto) {
-    return 'This action adds a new cart';
+  async handleItems(userId: string, body: AddItemDto[]) {
+    const cart = await this.getCartByUser(userId);
+    const cartItems = await body.map((item) =>
+      this.addItem(userId, item.productId, item.quantity, cart),
+    );
+    return this.createCart({ ...cartItems, userId });
+  }
+  createCart(createCartDto: CreateCartDto) {
+    return this.cartRepo.save(createCartDto);
   }
 
   findAll() {

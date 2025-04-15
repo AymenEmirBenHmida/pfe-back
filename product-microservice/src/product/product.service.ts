@@ -7,6 +7,7 @@ import { Product } from './entities/product.entity';
 import { Repository } from 'typeorm';
 import { FileService } from 'src/file/file.service';
 import { AddProductImagesDto } from './dto/add-product-images.dto';
+import { File } from 'src/file/entities/file.entity';
 
 @Injectable()
 export class ProductService {
@@ -162,11 +163,14 @@ export class ProductService {
     query.skip((page - 1) * limit).take(limit);
 
     const [items, total] = await query.getManyAndCount();
+    let images: File[];
     const enriched = await Promise.all(
       items.map(async (product) => {
-        const images = await this.fileService.getFilesWithIds(
-          product.files.map(Number),
-        );
+        if (product.files && product.files.length > 0) {
+          images = await this.fileService.getFilesWithIds(
+            product.files.map(Number),
+          );
+        }
         return {
           ...product,
           images,
