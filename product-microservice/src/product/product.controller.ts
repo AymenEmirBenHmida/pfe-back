@@ -28,6 +28,7 @@ export class ProductController {
   create(@Body() createProductDto: CreateProductDto) {
     return this.productService.create(createProductDto);
   }
+  // Gotta fiw up that whe there is a problem the file is still ssaved
   @Post(':id/images')
   @UseInterceptors(FilesInterceptor('productImages'))
   addProductImages(
@@ -68,7 +69,8 @@ export class ProductController {
       characteristics: characteristics
         ? JSON.parse(characteristics)
         : undefined,
-        
+      sortBy,
+      sortOrder,
     });
   }
 

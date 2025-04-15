@@ -153,7 +153,11 @@ export class ProductService {
         );
       }
     }
-  query.orderBy(`product.${sortBy}`, sortOrder.toUpperCase() as 'ASC' | 'DESC');
+    Logger.log('sort order ', sortOrder, ' sort by ', sortBy);
+    query.orderBy(
+      `product.${sortBy}`,
+      sortOrder.toUpperCase() as 'ASC' | 'DESC',
+    );
 
     query.skip((page - 1) * limit).take(limit);
 

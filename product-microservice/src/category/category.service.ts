@@ -47,7 +47,7 @@ export class CategoryService {
     // Step 4: Persist the updated category
     const updatedCategory = await this.categoriesRepository.save(category);
 
-    return {...updatedCategory,image:savedFile};
+    return { ...updatedCategory, image: savedFile };
   }
 
   async findAll() {
@@ -65,7 +65,7 @@ export class CategoryService {
 
     return enriched;
   }
-  
+
   async findAllFiltered(query: {
     name?: string;
     isActive?: string;
@@ -81,15 +81,25 @@ export class CategoryService {
     }
 
     if (isActive !== undefined) {
-      qb.andWhere('category.isActive = :isActive', { isActive: isActive === 'true' });
+      qb.andWhere('category.isActive = :isActive', {
+        isActive: isActive === 'true',
+      });
     }
 
     qb.skip((page - 1) * limit).take(limit);
 
     const [data, total] = await qb.getManyAndCount();
-
+    const enriched = await Promise.all(
+      data.map(async (category) => {
+        const image = await this.fileService.getFileWithId(category.imageId);
+        return {
+          ...category,
+          image,
+        };
+      }),
+    );
     return {
-      data,
+      data: enriched,
       total,
       page,
       limit,
@@ -105,7 +115,7 @@ export class CategoryService {
     }
 
     // Retrieve the image related to the category
-    const image = await this.fileService.getFileWithId(category.id);
+    const image = await this.fileService.getFileWithId(category.imageId);
     return {
       ...category,
       image,
@@ -147,10 +157,11 @@ export class CategoryService {
     Object.assign(categoryToBeUpdated, updateCategoryDto);
     // Retrieve the image related to the category
     const image = await this.fileService.getFileWithId(categoryToBeUpdated.id);
-      // Step 3: Save the updated category
-    const updatedCtagory = await this.categoriesRepository.save(categoryToBeUpdated);
-  
-    return {...updatedCtagory,image};
+    // Step 3: Save the updated category
+    const updatedCtagory =
+      await this.categoriesRepository.save(categoryToBeUpdated);
+
+    return { ...updatedCtagory, image };
   }
 
   // Delete category by ID and remove associated image
