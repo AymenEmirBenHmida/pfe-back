@@ -120,6 +120,7 @@ export class CartService implements OnModuleInit {
   }
 
   async handleItems(userId: string, body: AddItemDto[]) {
+    console.log('handleItems ', body);
     const cart = await this.getCartByUser(userId);
 
     for (const { productId, quantity } of body) {

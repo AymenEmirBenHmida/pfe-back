@@ -6,6 +6,7 @@ import { ConfigService } from '@nestjs/config';
 import { Transport } from '@nestjs/microservices';
 import { HttpExceptionFilter } from './filters/http-exception.filter';
 import { join } from 'path';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -56,14 +57,28 @@ async function bootstrap() {
       },
     },
   });
+  // Get port number
+  const port = configService.get('PORT', 3005);
   // Use Http exception filter
   app.useGlobalFilters(new HttpExceptionFilter());
   logger.log('Starting microservices...');
   await app.startAllMicroservices();
   logger.log('Microservices started successfully');
+  // Swagger set up
+  const options = new DocumentBuilder()
+    .setTitle('Product API')
+    .setDescription(
+      'this is the product microservice responsible for managing products categories and carts and also files related to the entities previously mentioned.',
+    )
+    .setVersion('1.0')
+    .addServer('http://localhost:' + port, 'Local environment')
+    .addTag('Your API Tag')
+    .build();
+
+  const document = SwaggerModule.createDocument(app, options);
+  SwaggerModule.setup('api-docs', app, document);
   // Initialize HTTP server on configured port
   // This allows the service to handle both HTTP requests and Kafka events
-  const port = configService.get('PORT', 3005);
   await app.listen(port);
   logger.log(`User microservice running on port ${port}`);
 }

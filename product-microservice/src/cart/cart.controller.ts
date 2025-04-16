@@ -18,6 +18,7 @@ export class CartController {
   // Update ,Delete or Add by batch
   @Post(':userId/items')
   handleItems(@Param('userId') userId: string, @Body() body: AddItemDto[]) {
+    console.log('handleItems controller ', body);
     return this.cartService.handleItems(userId, body);
   }
 
