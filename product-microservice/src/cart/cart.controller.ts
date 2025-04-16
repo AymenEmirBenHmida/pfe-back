@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
 import { CartService } from './cart.service';
 import { CreateCartDto } from './dto/create-cart.dto';
 import { UpdateCartDto } from './dto/update-cart.dto';
@@ -8,22 +16,34 @@ import { AddItemDto } from './dto/add-item.dto';
 export class CartController {
   constructor(private readonly cartService: CartService) {}
   // Update ,Delete or Add by batch
-  @Post(":userId/items")
-  handleItems(@Param("userId") userId:string,@Body() body:AddItemDto[]){
-    return this.cartService.handleItems(userId,body);
+  @Post(':userId/items')
+  handleItems(@Param('userId') userId: string, @Body() body: AddItemDto[]) {
+    return this.cartService.handleItems(userId, body);
   }
 
   @Post(':userId/item')
   addItem(@Param('userId') userId: string, @Body() body: AddItemDto) {
-    return this.cartService.addItemPlusCheck(userId, body.productId, body.quantity);
+    return this.cartService.addItemPlusCheck(
+      userId,
+      body.productId,
+      body.quantity,
+    );
   }
 
-  @Delete(':userId/items/:productId')
+  @Delete(':userId/item/:productId')
   removeItem(
     @Param('userId') userId: string,
     @Param('productId') productId: string,
   ) {
     return this.cartService.removeItem(userId, productId);
+  }
+  @Delete(':userId/items')
+  removeCart(@Param('userId') userId: string) {
+    return this.cartService.removeItems(userId);
+  }
+  @Delete('')
+  removeCarts(@Param('userId') userId: string) {
+    return this.cartService.removecarts(userId);
   }
   // Get a cart by the user id
   @Get(':userId')

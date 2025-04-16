@@ -22,7 +22,7 @@ import { ProductService } from 'src/product/product.service';
           options: {
             // Kafka client configuration
             client: {
-              clientId: 'user-service',
+              clientId: 'cart-service',
               brokers: configService
                 .get('KAFKA_BROKERS', 'localhost:29092')
                 .split(','),
@@ -33,7 +33,7 @@ import { ProductService } from 'src/product/product.service';
             },
             // Consumer group configuration
             consumer: {
-              groupId: 'user-consumer',
+              groupId: 'cart-consumer', // UNIQUE!
               allowAutoTopicCreation: true,
             },
           },

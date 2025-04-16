@@ -1,8 +1,9 @@
 // cart-item.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, Unique } from 'typeorm';
 import { Cart } from './cart.entity';
 
 @Entity()
+@Unique(['cart', 'productId']) // this ensures one product per cart
 export class CartItem {
   @PrimaryGeneratedColumn('uuid')
   id: string;

@@ -82,19 +82,21 @@ export class CartService implements OnModuleInit {
     quantity: number,
     cart: Cart,
   ): Promise<CartItem> {
-    const existingItem = cart.items.find(
-      (item) => item.productId === productId,
-    );
+    // Ensure cart items are loaded
+    const items = cart.items ?? [];
+
+    // Check for an existing item with the same productId
+    const existingItem = items.find((item) => item.productId === productId);
 
     if (existingItem) {
+      // Update quantity if item exists
       existingItem.quantity += quantity;
       return await this.itemRepo.save(existingItem);
     } else {
+      // Create and save new item if it doesn't exist
       const newItem = this.itemRepo.create({ productId, quantity, cart });
       return await this.itemRepo.save(newItem);
     }
-
-    // return this.getCartByUser(userId);
   }
 
   async removeItem(userId: string, productId: string): Promise<Cart> {
@@ -103,12 +105,40 @@ export class CartService implements OnModuleInit {
     await this.cartRepo.save(cart);
     return this.getCartByUser(userId);
   }
+  async removeItems(userId: string) {
+    const cart = await this.getCartByUser(userId);
+
+    return this.cartRepo.remove(cart);
+  }
+  async removecarts(userId: string) {
+    const cart = await this.getCartByUser(userId);
+    const carts = await this.cartRepo.find();
+    carts.map(async (cart0) => {
+      await this.cartRepo.remove(cart0);
+    });
+    return 'succeed';
+  }
+
   async handleItems(userId: string, body: AddItemDto[]) {
     const cart = await this.getCartByUser(userId);
-    const cartItems = await body.map((item) =>
-      this.addItem(userId, item.productId, item.quantity, cart),
-    );
-    return this.createCart({ ...cartItems, userId });
+
+    for (const { productId, quantity } of body) {
+      const existingItem = await this.itemRepo.findOne({
+        where: {
+          cart: { id: cart.id },
+          productId: productId,
+        },
+      });
+
+      if (existingItem) {
+        await this.itemRepo.save(existingItem);
+      } else {
+        const newItem = this.itemRepo.create({ productId, quantity, cart });
+        await this.itemRepo.save(newItem);
+      }
+    }
+
+    return this.getCartByUser(userId); // return updated cart
   }
   createCart(createCartDto: CreateCartDto) {
     return this.cartRepo.save(createCartDto);
