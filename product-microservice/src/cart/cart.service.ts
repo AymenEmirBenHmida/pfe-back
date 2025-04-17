@@ -14,7 +14,7 @@ export class CartService implements OnModuleInit {
   constructor(
     @InjectRepository(Cart) private cartRepo: Repository<Cart>,
     @InjectRepository(CartItem) private itemRepo: Repository<CartItem>,
-    @Inject('KAFKA_SERVICE') private readonly kafkaClient: ClientKafka,
+    @Inject('KAFKA_CART_CLIENT') private readonly kafkaClient: ClientKafka,
     private productService: ProductService,
   ) {}
   async onModuleInit() {

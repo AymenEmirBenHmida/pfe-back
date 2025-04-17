@@ -48,13 +48,19 @@ export class AuthController {
    */
   @MessagePattern('user.authentication.create')
   async createUser(
-    @Payload() data: { email: string; password: string; additionalData?: any },
+    @Payload()
+    data: {
+      email: string;
+      password: string;
+      name: string;
+      timestamp:string;
+    },
   ) {
     this.logger.log(`Received request to create user: ${data.email}`);
     try {
       const result = await this.authService.createUser(data);
       this.logger.log(`User created successfully: ${data.email}`);
-      return { success: true, userId: result.id };
+      return { success: true, user: result };
     } catch (error) {
       this.logger.error(`Error creating user: ${error.message}`, error.stack);
       return { success: false, error: error.message };

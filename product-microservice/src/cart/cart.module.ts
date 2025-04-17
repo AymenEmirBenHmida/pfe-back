@@ -14,7 +14,7 @@ import { ProductService } from 'src/product/product.service';
     TypeOrmModule.forFeature([Cart, CartItem]),
     ClientsModule.registerAsync([
       {
-        name: 'KAFKA_SERVICE',
+        name: 'KAFKA_CART_CLIENT',
         imports: [ConfigModule],
         inject: [ConfigService],
         useFactory: (configService: ConfigService) => ({

@@ -57,11 +57,7 @@ export class KafkaService implements OnModuleInit {
     }
   }
 
-  async createCredentials(
-    email: string,
-    password: string,
-    additionalData?: any,
-  ) {
+  async createCredentials(email: string, password: string, name: any) {
     this.logger.debug(`Sending credential creation request for ${email}`);
     try {
       const result = await firstValueFrom(
@@ -69,7 +65,7 @@ export class KafkaService implements OnModuleInit {
           .send('user.authentication.create', {
             email,
             password,
-            additionalData,
+            name,
             timestamp: new Date().toISOString(),
           })
           .pipe(

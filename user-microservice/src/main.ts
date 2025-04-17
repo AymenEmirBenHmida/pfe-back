@@ -6,6 +6,7 @@ import { Logger } from '@nestjs/common';
 import { HttpExceptionFilter } from './filters/http-exception.filter';
 import { join } from 'path';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 /**
  * Bootstrap function to initialize and start the NestJS application
@@ -32,18 +33,17 @@ async function bootstrap() {
     'localhost:29092',
   );
   console.log(`Kafka Brokers: ${kafkaBrokers}`);
-app.use('/uploads', (req, res, next) => {
-  req.url = req.url.replace(/\/+$/, ''); // Remove trailing slashes
-  console.log('Cleaned request path:', req.url);
-  next();
-});
+  app.use('/uploads', (req, res, next) => {
+    req.url = req.url.replace(/\/+$/, ''); // Remove trailing slashes
+    console.log('Cleaned request path:', req.url);
+    next();
+  });
   // Serve static files from the uploads directory with /uploads prefix
   app.useStaticAssets(join(process.cwd(), 'uploads'), {
     prefix: '/uploads',
   });
   console.log('Serving static files from:', join(process.cwd(), 'uploads'));
   logger.log(`Configuring Kafka microservice with brokers: ${kafkaBrokers}`);
-  
 
   // Configure Kafka microservice connection
   // This sets up the application as a Kafka consumer/producer
@@ -64,15 +64,28 @@ app.use('/uploads', (req, res, next) => {
       },
     },
   });
+  // Initialize HTTP server on configured port
+  const port = configService.get('PORT', 3004);
   // Use Http exception filter
   app.useGlobalFilters(new HttpExceptionFilter());
   logger.log('Starting microservices...');
   await app.startAllMicroservices();
   logger.log('Microservices started successfully');
+  // Swagger set up
+  const options = new DocumentBuilder()
+    .setTitle('User API')
+    .setDescription(
+      'this is the user microservice responsible for managing users.',
+    )
+    .setVersion('1.0')
+    .addServer('http://localhost:' + port, 'Local environment')
+    .addTag('Your API Tag')
+    .build();
 
-  // Initialize HTTP server on configured port
+  const document = SwaggerModule.createDocument(app, options);
+  SwaggerModule.setup('api-docs', app, document);
   // This allows the service to handle both HTTP requests and Kafka events
-  const port = configService.get('PORT', 3002);
+
   await app.listen(port);
   logger.log(`User microservice running on port ${port}`);
 }

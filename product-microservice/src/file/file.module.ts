@@ -65,6 +65,12 @@ import { File } from './entities/file.entity';
           limits: {
             fileSize: 5 * 1024 * 1024, // 5MB limit
           },
+          fileFilter: (req, file, cb) => {
+            if (!file.mimetype.match(/^image\/(jpeg|png|gif|webp)$/)) {
+              return cb(new Error('Only image files are allowed!'), false);
+            }
+            cb(null, true);
+          },
         };
       },
     }),

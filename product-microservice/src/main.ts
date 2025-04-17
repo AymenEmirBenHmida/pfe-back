@@ -44,7 +44,7 @@ async function bootstrap() {
     transport: Transport.KAFKA,
     options: {
       client: {
-        clientId: 'user-service', // Unique identifier for this service
+        clientId: 'cart-service', // Unique identifier for this service
         brokers: kafkaBrokers.split(','), // Support multiple broker addresses
         retry: {
           initialRetryTime: 300, // Initial retry delay in ms
@@ -52,7 +52,7 @@ async function bootstrap() {
         },
       },
       consumer: {
-        groupId: 'user-consumer', // Consumer group for this service
+        groupId: 'cart-consumer', // Consumer group for this service
         allowAutoTopicCreation: true, // Automatically create topics if they don't exist
       },
     },

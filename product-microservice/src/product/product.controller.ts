@@ -19,6 +19,13 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { AddProductImagesDto } from './dto/add-product-images.dto';
 import { Request } from 'express';
+import {
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+} from '@nestjs/swagger';
 
 @Controller('product')
 export class ProductController {
@@ -30,6 +37,30 @@ export class ProductController {
   }
   // Gotta fiw up that when there is a problem the file is still saved
   @Post(':id/images')
+  @UseInterceptors(FilesInterceptor('productImages'))
+  @ApiOperation({ summary: 'Upload product images' })
+  @ApiConsumes('multipart/form-data')
+  @ApiParam({ name: 'id', type: Number, description: 'ID of the product' })
+  @ApiBody({
+    description: 'FormData with product images and their metadata',
+    schema: {
+      type: 'object',
+      properties: {
+        productImages: {
+          type: 'array',
+          items: {
+            type: 'string',
+            format: 'binary',
+          },
+        },
+        images: {
+          type: 'string',
+          example:
+            '[{ "order": 1,"isOld":true,"id":5 }, { "order": 2,"isOld":false }]',
+        },
+      },
+    },
+  })
   @UseInterceptors(FilesInterceptor('productImages'))
   addProductImages(
     @Param('id') id: string,
@@ -46,6 +77,21 @@ export class ProductController {
   }
 
   @Get()
+  @ApiOperation({ summary: 'Filter and get all products' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiQuery({ name: 'category', required: false, type: String })
+  @ApiQuery({ name: 'minPrice', required: false, type: Number })
+  @ApiQuery({ name: 'maxPrice', required: false, type: Number })
+  @ApiQuery({
+    name: 'characteristics',
+    required: false,
+    type: String,
+    description: 'JSON string',
+  })
+  @ApiQuery({ name: 'sortBy', required: false, type: String })
+  @ApiQuery({ name: 'sortOrder', required: false, type: String })
   findAll(
     @Req() request: Request,
 
@@ -75,16 +121,23 @@ export class ProductController {
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Get a product by ID' })
+  @ApiParam({ name: 'id', type: Number })
   findOne(@Param('id') id: string) {
     return this.productService.findOne(+id);
   }
 
   @Patch(':id')
+  @ApiOperation({ summary: 'Update product by ID' })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiBody({ type: UpdateProductDto })
   update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
     return this.productService.update(+id, updateProductDto);
   }
 
   @Delete(':id')
+  @ApiOperation({ summary: 'Delete product by ID' })
+  @ApiParam({ name: 'id', type: Number })
   remove(@Param('id') id: string) {
     return this.productService.remove(+id);
   }
