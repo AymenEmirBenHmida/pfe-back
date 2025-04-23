@@ -132,6 +132,7 @@ export class CartService implements OnModuleInit {
       });
 
       if (existingItem) {
+        existingItem.quantity = quantity;
         await this.itemRepo.save(existingItem);
       } else {
         const newItem = this.itemRepo.create({ productId, quantity, cart });

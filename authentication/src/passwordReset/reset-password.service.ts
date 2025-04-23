@@ -71,6 +71,33 @@ export class PasswordService {
       };
     }
   }
+  async resetPasswordEligiblity(token: string) {
+    const resetToken = await this.resetRepository.findOne({
+      where: {
+        token,
+        used: false,
+      },
+    });
+    console.log('token', token);
+
+    // Invalid token
+    if (!resetToken) {
+      return {
+        success: false,
+        message: 'Used reset token',
+      };
+    }
+
+    // Token expired
+    if (new Date() > resetToken.expiresAt) {
+      return {
+        success: false,
+        message: 'Reset token expired',
+      };
+    }
+
+    return { success: true };
+  }
 
   async resetPassword(
     token: string,

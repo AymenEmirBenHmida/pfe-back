@@ -61,7 +61,6 @@ export class ProductController {
       },
     },
   })
-  @UseInterceptors(FilesInterceptor('productImages'))
   addProductImages(
     @Param('id') id: string,
     @Body() body: any,

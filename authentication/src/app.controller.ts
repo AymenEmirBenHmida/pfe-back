@@ -12,7 +12,11 @@ import {
 } from '@nestjs/common';
 import { Response, Request } from 'express';
 import { AppService } from './app.service';
-import { ForgotPasswordDto, ResetPasswordDto } from './dto/password-reset.dto';
+import {
+  ForgotPasswordDto,
+  ResetPasswordDto,
+  ResetPasswordEligibilityDto,
+} from './dto/password-reset.dto';
 import { PasswordService } from './passwordReset/reset-password.service';
 import { RefreshTokenService } from './refreshToken/refresh-token.service';
 import { JwtService } from '@nestjs/jwt';
@@ -182,6 +186,25 @@ export class AppController {
     return this.passwordService.resetPassword(
       resetPasswordDto.token,
       resetPasswordDto.password,
+    );
+  }
+  @Post('reset-password-eligibility')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verify reset password eligibility' })
+  @ApiBody({
+    type: ResetPasswordDto,
+    examples: {
+      example1: {
+        value: { token: 'abcdefg123' },
+      },
+    },
+  })
+  async resetPasswordEligibility(
+    @Body() resetPasswordEligibilityDto: ResetPasswordEligibilityDto,
+  ) {
+    this.logger.log('Password reset execution request received');
+    return this.passwordService.resetPasswordEligiblity(
+      resetPasswordEligibilityDto.token,
     );
   }
 
