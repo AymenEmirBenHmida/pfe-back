@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import * as cookieParser from 'cookie-parser';
 import { Transport } from '@nestjs/microservices';
 import { HttpExceptionFilter } from './filters/http-exception.filter';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 async function bootstrap() {
   //create the NestJS application
   const app = await NestFactory.create(AppModule);
@@ -36,7 +37,21 @@ async function bootstrap() {
       },
     },
   });
+  // Getting the port of the microservice
+  const port = configService.get('PORT');
+  // Swagger set up
+  const options = new DocumentBuilder()
+    .setTitle('Authentication API')
+    .setDescription(
+      'this is the authentication microservice responsible for all authentication related operations.',
+    )
+    .setVersion('1.0')
+    .addServer('http://localhost:' + port, 'Local environment')
+    .addTag('Your API Tag')
+    .build();
 
+  const document = SwaggerModule.createDocument(app, options);
+  SwaggerModule.setup('api-docs', app, document);
   //use the validation pipe globally to validate the incoming requests
   await app.useGlobalPipes(new ValidationPipe());
   //get the config service instance to get the PORT value

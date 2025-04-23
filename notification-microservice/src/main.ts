@@ -5,7 +5,6 @@ import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpExceptionFilter } from './filters/http-exception.filter';
 async function bootstrap() {
-  const logger = new Logger('Notification Service');
   //create the microservice
   const configService = new ConfigService();
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(

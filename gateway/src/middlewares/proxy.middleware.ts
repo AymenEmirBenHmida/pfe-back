@@ -31,19 +31,22 @@ export class ProxyMiddleware implements NestMiddleware {
     if (targetUrl) {
       // Remove service name from path and ensure valid format
       const rewrittenPath = req.originalUrl.startsWith(`/${service}/`)
-        ? req.originalUrl.slice(service.length + 1) // Ensure leading slash is preserved
-        : req.originalUrl;
-      const destinationUrl = `${targetUrl}${rewrittenPath}`;
-
-      // Log proxy destination for debugging
-      console.log(
-        `Redirecting request: ${req.originalUrl} -> ${destinationUrl}`,
-      );
-
+        ? req.originalUrl.replace(`/${service}`, '')
+        : // Ensure leading slash is preserved
+          req.originalUrl;
+     let destinationUrl = `${targetUrl}${rewrittenPath}`;
+     destinationUrl = destinationUrl.split('?')[0];
+     // Log proxy destination for debugging
+     console.log(
+       `Redirecting request: ${req.originalUrl} -> ${destinationUrl}`,
+     );
       // Configure proxy middleware with request handling
       const proxy = createProxyMiddleware({
+        target: targetUrl,
         changeOrigin: true,
-        cookieDomainRewrite: '', // Rewrite cookie domain to client domain
+        pathRewrite: (path) => {
+          return path.replace(`/${service}`, '');
+        },
         on: {
           // Configure request interceptor for header and body management
           proxyReq: (proxyReq, req: Request) => {
@@ -77,6 +80,7 @@ export class ProxyMiddleware implements NestMiddleware {
         },
         // Configure dynamic routing based on destination URL
         router: async (req) => {
+          console.log(destinationUrl);
           return destinationUrl;
         },
       });

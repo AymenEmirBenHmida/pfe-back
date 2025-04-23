@@ -104,29 +104,93 @@ export class AppService {
     }
   }
 
-  async register(userData: {
-    email: string;
-    password: string;
-    [key: string]: any;
-  }) {
+  async register(
+    userData: {
+      email: string;
+      password: string;
+      [key: string]: any;
+    },
+    response: Response,
+  ) {
     try {
       // Delegate user creation to User microservice
-      const { email, password, ...additionalData } = userData;
+      const { email, password, name } = userData;
 
-      const result = await this.kafkaService.createCredentials(
+      const userResponse = await this.kafkaService.createCredentials(
         email,
         password,
-        additionalData,
+        name,
       );
 
-      if (!result || !result.success) {
-        throw new Error(result?.message || 'Registration failed');
+      if (!userResponse || !userResponse.success) {
+        throw new Error(userResponse?.message || 'Registration failed');
       }
+      console.log('user role on register is ', userResponse);
 
+      // Create JWT with minimal info
+      const tokenPayload: TokenPayload = {
+        userId: userResponse.user.id,
+        role: userResponse.role || 'user',
+        type: 'access', // Set a specific token type
+      };
+      // Create refresh token with longer expiration
+      const refreshTokenPayload: TokenPayload = {
+        userId: userResponse.user.id,
+        role: userResponse.role || 'user',
+        type: 'refresh',
+      };
+
+      // Set expiration for JWT access
+      const expires = new Date();
+      expires.setSeconds(
+        expires.getSeconds() + this.configService.get('JWT_EXPIRATION'),
+      );
+
+      // Set refresh token expiration (longer than access token) Default 7 days
+      const refreshExpiration = this.configService.get<number>(
+        'JWT_REFRESH_EXPIRATION',
+        604800,
+      );
+      const refreshExpires = new Date();
+      refreshExpires.setSeconds(
+        refreshExpires.getSeconds() + refreshExpiration,
+      );
+      // Access token creation
+      const accessToken = this.jwtService.sign(tokenPayload);
+      // Refresh token creation
+      const refreshToken = this.jwtService.sign(refreshTokenPayload, {
+        expiresIn:
+          this.configService.get('JWT_REFRESH_EXPIRATION', 604800) + 's', // Default 7 days
+      });
+      // Store refresh token in database
+      await this.refreshTokenService.saveRefreshToken(
+        userResponse.user.id,
+        refreshToken,
+        refreshExpiration,
+      );
+      // Set access token in cookie
+      response.cookie('Authentication', accessToken, {
+        httpOnly: true,
+        expires,
+        sameSite: 'lax',
+      });
+
+      // Set refresh token in cookie
+      response.cookie('RefreshToken', refreshToken, {
+        httpOnly: true,
+        expires: refreshExpires,
+        sameSite: 'lax',
+      });
       return {
         success: true,
         message: 'Registration successful',
-        userId: result.userId,
+        // userId: result.userId,
+        user: {
+          userId: userResponse.user.id,
+          role: userResponse.user.role,
+          email: userResponse.user.email,
+          name: userResponse.user.name,
+        },
       };
     } catch (error) {
       throw new UnauthorizedException(error.message || 'Registration failed');

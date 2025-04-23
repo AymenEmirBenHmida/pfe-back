@@ -5,7 +5,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { join } from 'path';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
-import { ImageModule } from './image/image.module';
 
 @Module({
   imports: [
@@ -22,7 +21,7 @@ import { ImageModule } from './image/image.module';
         DB_PASSWORD: Joi.string().required(),
         DB_NAME: Joi.string().required(),
         PORT: Joi.number().required(),
-        KAFKA_BROKERS: Joi.string().default('localhost:9092'), // Add this line
+        KAFKA_BROKERS: Joi.string().default('localhost:9092'), 
       }),
     }),
     TypeOrmModule.forRootAsync({

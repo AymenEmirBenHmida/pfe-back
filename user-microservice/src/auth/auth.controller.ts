@@ -48,13 +48,19 @@ export class AuthController {
    */
   @MessagePattern('user.authentication.create')
   async createUser(
-    @Payload() data: { email: string; password: string; additionalData?: any },
+    @Payload()
+    data: {
+      email: string;
+      password: string;
+      name: string;
+      timestamp:string;
+    },
   ) {
     this.logger.log(`Received request to create user: ${data.email}`);
     try {
       const result = await this.authService.createUser(data);
       this.logger.log(`User created successfully: ${data.email}`);
-      return { success: true, userId: result.id };
+      return { success: true, user: result };
     } catch (error) {
       this.logger.error(`Error creating user: ${error.message}`, error.stack);
       return { success: false, error: error.message };
@@ -70,6 +76,19 @@ export class AuthController {
     try {
       const user = await this.userService.findByEmail(data.email);
       return user ? { exists: true, userId: user.id } : { exists: false };
+    } catch (error) {
+      this.logger.error(`Failed to get user ID: ${error.message}`);
+      return { exists: false, error: 'Failed to retrieve user information' };
+    }
+  }
+  @MessagePattern('user.info.getById')
+  async getUserById(@Payload() data: { id: string }) {
+    try {
+      const user = await this.userService.findOne(+data.id);
+      if (!user) return null;
+
+      const { password, ...userInfo } = user;
+      return userInfo;
     } catch (error) {
       this.logger.error(`Failed to get user ID: ${error.message}`);
       return { exists: false, error: 'Failed to retrieve user information' };

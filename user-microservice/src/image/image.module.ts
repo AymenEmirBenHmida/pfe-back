@@ -32,11 +32,17 @@ import * as path from 'path';
           limits: {
             fileSize: 5 * 1024 * 1024, // 5MB limit
           },
+          fileFilter: (req, file, cb) => {
+            if (!file.mimetype.match(/^image\/(jpeg|png|gif|webp)$/)) {
+              return cb(new Error('Only image files are allowed!'), false);
+            }
+            cb(null, true);
+          },
         };
       },
     }),
   ],
   providers: [ImageService],
-  exports: [ImageService,MulterModule],
+  exports: [ImageService, MulterModule],
 })
 export class ImageModule {}

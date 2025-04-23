@@ -7,14 +7,24 @@ import { firstValueFrom } from 'rxjs';
 @Injectable()
 export class AuthMiddleware implements NestMiddleware {
   private publicPaths = [
-    '/auth/login',
-    '/auth/register',
-    '/health',
-    '/auth/forgot-password',
-    '/auth/reset-password',
-    '/auth/refresh-token',
-    
+    { path: '/product', method: 'GET' },
+    { path: '/product/:id', method: 'GET' },
+    { path: '/auth/login', method: 'POST' },
+    { path: '/auth/register', method: 'POST' },
+    { path: '/health', method: 'POST' },
+    { path: '/auth/forgot-password', method: 'POST' },
+    { path: '/auth/reset-password', method: 'POST' },
+    { path: '/auth/refresh-token', method: 'POST' },
+    // etc.
   ];
+  // [
+  //     '/auth/login',
+  //     '/auth/register',
+  //     '/health',
+  //     '/auth/forgot-password',
+  //     '/auth/reset-password',
+  //     '/auth/refresh-token',
+  //   ];
 
   constructor(
     private httpService: HttpService,
@@ -23,7 +33,7 @@ export class AuthMiddleware implements NestMiddleware {
 
   async use(req: Request, res: Response, next: NextFunction) {
     // Skip authentication for public routes
-    if (this.isPublicPath(req.baseUrl)) {
+    if (this.isPublicPath(req)) {
       return next();
     }
 
@@ -65,9 +75,12 @@ export class AuthMiddleware implements NestMiddleware {
       return res.status(401).json({ message: 'Unauthorized - Invalid token' });
     }
   }
-  //Test if a path is public or not
-  private isPublicPath(path: string): boolean {
-    return this.publicPaths.some((publicPath) => path.startsWith(publicPath));
+  private isPublicPath(req: Request): boolean {
+    return this.publicPaths.some(
+      (route) =>
+        req.method === route.method &&
+        (req.baseUrl === route.path || req.baseUrl.startsWith(route.path)),
+    );
   }
   //Extract token from request
   private extractToken(req: Request): string | null {

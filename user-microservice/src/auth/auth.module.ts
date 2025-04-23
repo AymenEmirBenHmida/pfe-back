@@ -20,7 +20,7 @@ import { ModuleRef } from '@nestjs/core';
      */
     ClientsModule.registerAsync([
       {
-        name: 'KAFKA_SERVICE',
+        name: 'KAFKA_USER_CLIENT',
         imports: [ConfigModule],
         inject: [ConfigService],
         useFactory: (configService: ConfigService) => ({

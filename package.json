@@ -1,0 +1,29 @@
+{
+  "name": "tek-list-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start:auth": "cd authentication && npm run start:dev",
+    "start:gateway": "cd gateway && npm run start:dev",
+    "start:notification": "cd notification-microservice && npm run start:dev",
+    "start:user": "cd user-microservice && npm run start:dev",
+    "start:all": "concurrently \"npm run start:auth\" \"npm run start:gateway\" \"npm run start:notification\" \"npm run start:user\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://bitbucket.org/anypli/tek-list-api.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://bitbucket.org/anypli/tek-list-api/issues"
+  },
+  "homepage": "https://bitbucket.org/anypli/tek-list-api#readme",
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

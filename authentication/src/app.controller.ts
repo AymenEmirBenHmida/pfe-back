@@ -12,12 +12,17 @@ import {
 } from '@nestjs/common';
 import { Response, Request } from 'express';
 import { AppService } from './app.service';
-import { ForgotPasswordDto, ResetPasswordDto } from './dto/password-reset.dto';
+import {
+  ForgotPasswordDto,
+  ResetPasswordDto,
+  ResetPasswordEligibilityDto,
+} from './dto/password-reset.dto';
 import { PasswordService } from './passwordReset/reset-password.service';
 import { RefreshTokenService } from './refreshToken/refresh-token.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-
+import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+@ApiTags('Authentication')
 @Controller()
 export class AppController {
   private readonly logger = new Logger(AppController.name);
@@ -32,6 +37,16 @@ export class AppController {
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Login a user' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        email: { type: 'string', example: 'user@example.com' },
+        password: { type: 'string', example: '12345678' },
+      },
+    },
+  })
   async login(
     @Body() credentials: { email: string; password: string },
     @Res({ passthrough: true }) response: Response,
@@ -54,6 +69,8 @@ export class AppController {
   }
   @Post('logout')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Log out the current user' })
+  @ApiResponse({ status: 200, description: 'Successfully logged out' })
   async logout(
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
@@ -81,10 +98,27 @@ export class AppController {
 
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
-  async register(@Body() userData: any) {
+  @ApiOperation({ summary: 'Register a new user' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        email: { type: 'string', example: 'newuser@example.com' },
+        password: { type: 'string', example: 'StrongP@ssword1' },
+        name: { type: 'string', example: 'John Doe' },
+      },
+    },
+  })
+  async register(
+    @Body() userData: any,
+    @Res({ passthrough: true }) response: Response,
+  ) {
     this.logger.log(`Registration attempt for user: ${userData.email}`);
     try {
-      const result = await this.authenticationService.register(userData);
+      const result = await this.authenticationService.register(
+        userData,
+        response,
+      );
       this.logger.log(`Registration successful for user: ${userData.email}`);
       return result;
     } catch (error) {
@@ -98,6 +132,8 @@ export class AppController {
 
   @Post('validate-token')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Validate an access token' })
+  @ApiResponse({ status: 200, description: 'Token is valid' })
   async validateToken(@Req() request: Request) {
     this.logger.log('Token validation request received');
     const token = request.headers.authorization?.split(' ')[1];
@@ -118,6 +154,15 @@ export class AppController {
 
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Request a password reset link' })
+  @ApiBody({
+    type: ForgotPasswordDto,
+    examples: {
+      example1: {
+        value: { email: 'user@example.com' },
+      },
+    },
+  })
   async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
     this.logger.log(
       `Password reset request received for: ${forgotPasswordDto.email}`,
@@ -127,6 +172,15 @@ export class AppController {
 
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Reset password with token' })
+  @ApiBody({
+    type: ResetPasswordDto,
+    examples: {
+      example1: {
+        value: { token: 'abcdefg123', password: 'NewP@ssword123' },
+      },
+    },
+  })
   async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
     this.logger.log('Password reset execution request received');
     return this.passwordService.resetPassword(
@@ -134,9 +188,37 @@ export class AppController {
       resetPasswordDto.password,
     );
   }
+  @Post('reset-password-eligibility')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verify reset password eligibility' })
+  @ApiBody({
+    type: ResetPasswordDto,
+    examples: {
+      example1: {
+        value: { token: 'abcdefg123' },
+      },
+    },
+  })
+  async resetPasswordEligibility(
+    @Body() resetPasswordEligibilityDto: ResetPasswordEligibilityDto,
+  ) {
+    this.logger.log('Password reset execution request received');
+    return this.passwordService.resetPasswordEligiblity(
+      resetPasswordEligibilityDto.token,
+    );
+  }
 
   @Post('refresh-token')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Refresh authentication tokens' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        refreshToken: { type: 'string', example: 'jwt_refresh_token_here' },
+      },
+    },
+  })
   async refreshToken(
     @Body() body: { refreshToken?: string },
     @Req() request: Request,

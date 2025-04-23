@@ -19,7 +19,7 @@ export class AuthService implements OnModuleInit {
 
   constructor(
     private readonly userService: UserService,
-    @Inject('KAFKA_SERVICE') private readonly kafkaClient: ClientKafka,
+    @Inject('KAFKA_USER_CLIENT') private readonly kafkaClient: ClientKafka,
   ) {}
 
   /**
@@ -109,7 +109,7 @@ export class AuthService implements OnModuleInit {
    * @returns Newly created user object
    */
   async createUser(userData: any) {
-    const { email, password } = userData;
+    const { email, password, name } = userData;
 
     // Check if user exists
     const existingUser = await this.userService.findByEmail(email);
@@ -121,7 +121,7 @@ export class AuthService implements OnModuleInit {
     const newUser = await this.userService.create({
       email,
       password: password,
-      name: '',
+      name: name,
       //   role: userData.role || 'user',
     });
 

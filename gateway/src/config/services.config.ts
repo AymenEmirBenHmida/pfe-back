@@ -10,7 +10,7 @@ export const servicesConfig: ServiceRegistry = {
   products: {
     name: 'Product Service',
     url: process.env.PRODUCT_SERVICE_URL || 'http://localhost',
-    port: parseInt(process.env.PRODUCT_SERVICE_PORT || '3002'),
+    port: parseInt(process.env.PRODUCT_SERVICE_PORT || '3005'),
     healthCheck: '/health',
   },
   orders: {
