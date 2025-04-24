@@ -57,6 +57,7 @@ async function bootstrap() {
       },
     },
   });
+  
   // Get port number
   const port = configService.get('PORT', 3005);
   // Use Http exception filter
