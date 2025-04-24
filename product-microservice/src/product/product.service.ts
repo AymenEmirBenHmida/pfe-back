@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ConfigService } from '@nestjs/config';
@@ -8,6 +8,7 @@ import { Repository } from 'typeorm';
 import { FileService } from 'src/file/file.service';
 import { AddProductImagesDto } from './dto/add-product-images.dto';
 import { File } from 'src/file/entities/file.entity';
+import { ClientKafka } from '@nestjs/microservices';
 
 @Injectable()
 export class ProductService {
@@ -15,6 +16,7 @@ export class ProductService {
     private readonly configService: ConfigService,
     @InjectRepository(Product) private productsRepository: Repository<Product>,
     private readonly fileService: FileService,
+    @Inject('KAFKA_PRODUCT_CLIENT') private readonly kafkaClient: ClientKafka,
   ) {}
   async create(
     createProductDto: CreateProductDto,
@@ -240,6 +242,9 @@ export class ProductService {
         'products',
       );
     }
-    return await this.productsRepository.remove(productToBeRemoved);
+    const removedProduct =
+      await this.productsRepository.remove(productToBeRemoved);
+    this.kafkaClient.emit('product.deleted', removedProduct.id);
+    return removedProduct;
   }
 }

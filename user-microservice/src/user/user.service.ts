@@ -1,5 +1,6 @@
 import { ImageService } from './../image/image.service';
 import {
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
@@ -12,6 +13,7 @@ import { User } from './entities/user.entity';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import { GetUserDto } from './dto/get-user.dto';
+import { ClientKafka } from '@nestjs/microservices';
 
 @Injectable()
 export class UserService {
@@ -19,6 +21,7 @@ export class UserService {
   constructor(
     @InjectRepository(User) private usersRepository: Repository<User>,
     private imageService: ImageService,
+    @Inject('KAFKA_USER_CLIENT') private readonly kafkaClient: ClientKafka,
   ) {}
   async create(createUserDto: CreateUserDto) {
     const createdUser = this.usersRepository.create({
@@ -82,7 +85,9 @@ export class UserService {
     if (!userToBeDeleted) {
       throw new NotFoundException();
     }
-    return await this.usersRepository.remove(userToBeDeleted);
+    const deletedUser = await this.usersRepository.remove(userToBeDeleted);
+    this.kafkaClient.emit('user.deleted', deletedUser.id);
+    return deletedUser;
   }
 
   async getUser(getUserDto: GetUserDto) {
