@@ -16,13 +16,19 @@ export const servicesConfig: ServiceRegistry = {
   orders: {
     name: 'Order Service',
     url: process.env.ORDER_SERVICE_URL || 'http://localhost',
-    port: parseInt(process.env.ORDER_SERVICE_PORT || '3003'),
+    port: parseInt(process.env.ORDER_SERVICE_PORT || '3007'),
     healthCheck: '/health',
   },
   users: {
     name: 'User Service',
     url: process.env.USER_SERVICE_URL || 'http://localhost',
     port: parseInt(process.env.USER_SERVICE_PORT || '3004'),
+    healthCheck: '/health',
+  },
+  reviews: {
+    name: 'Review Service',
+    url: process.env.REVIEW_SERVICE_URL || 'http://localhost',
+    port: parseInt(process.env.REVIEW_SERVICE_PORT || '3006'),
     healthCheck: '/health',
   },
 };

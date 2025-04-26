@@ -26,6 +26,7 @@ import {
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
+import { MessagePattern, Payload, Transport } from '@nestjs/microservices';
 
 @Controller('product')
 export class ProductController {
@@ -139,5 +140,12 @@ export class ProductController {
   @ApiParam({ name: 'id', type: Number })
   remove(@Param('id') id: string) {
     return this.productService.remove(+id);
+  }
+  @MessagePattern('order.created', Transport.KAFKA)
+  async handleOrderCreated(@Payload() data: any) {
+    const orderedItems = data.items;
+    for (const item of orderedItems) {
+      await this.productService.decreaseStock(item.productId, item.quantity);
+    }
   }
 }

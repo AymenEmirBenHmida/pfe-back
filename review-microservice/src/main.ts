@@ -35,7 +35,7 @@ async function bootstrap() {
   });
 
   // Get port number
-  const port = configService.get('PORT', 3005);
+  const port = configService.get('PORT', 3006);
   // Use Http exception filter
   app.useGlobalFilters(new HttpExceptionFilter());
   // logger.log('Starting microservices...');
