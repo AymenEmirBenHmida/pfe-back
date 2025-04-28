@@ -16,7 +16,11 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly userService: UserService,
   ) {}
-
+  @MessagePattern('user.getUsersByIds')
+  async getUsersByIds(@Payload() data: { ids: number[] }) {
+    this.logger.debug('entered message pattern to get users by uds');
+    return this.authService.getUsersByIds(data.ids);
+  }
   /**
    * Validates user login credentials
    */
@@ -53,7 +57,7 @@ export class AuthController {
       email: string;
       password: string;
       name: string;
-      timestamp:string;
+      timestamp: string;
     },
   ) {
     this.logger.log(`Received request to create user: ${data.email}`);

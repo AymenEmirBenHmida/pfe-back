@@ -37,6 +37,7 @@ export class AuthService implements OnModuleInit {
       'user.authentication.resetPassword',
       'user.info.getId',
       'user.password.updateById',
+      'user.getUsersByIds.reply',
     ];
 
     requiredTopics.forEach((topic) => {
@@ -54,7 +55,9 @@ export class AuthService implements OnModuleInit {
       );
     }
   }
-
+  async getUsersByIds(ids: number[]) {
+    return await this.userService.getUsersByIds(ids);
+  }
   /**
    * Validates user credentials against stored data
    * @returns Object with validation result and user data if valid

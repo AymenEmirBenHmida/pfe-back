@@ -226,7 +226,7 @@ export class AppController {
     @Res({ passthrough: true }) response: Response,
   ) {
     this.logger.log('Token refresh request received');
-    console.log(request.cookies);
+    console.log('Cookies:', JSON.stringify(request.cookies, null, 2));
     // Get the refresh token from request body or cookie
     const refreshToken =
       body?.refreshToken ||

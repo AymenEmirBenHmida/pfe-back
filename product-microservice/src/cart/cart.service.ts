@@ -17,6 +17,7 @@ export class CartService implements OnModuleInit {
     @Inject('KAFKA_CART_CLIENT') private readonly kafkaClient: ClientKafka,
     private productService: ProductService,
   ) {}
+
   async onModuleInit() {
     this.kafkaClient.subscribeToResponseOf('user.info.getById');
     await this.kafkaClient.connect();
@@ -27,6 +28,12 @@ export class CartService implements OnModuleInit {
       .send('user.info.getById', { id: userId })
       .toPromise();
   }
+
+  // Ensure productId is valid
+  private isValidProductId(productId: any): boolean {
+    return !isNaN(Number(productId)) && Number(productId) > 0;
+  }
+
   async getCartByUser(userId: string): Promise<Cart> {
     let cart = await this.cartRepo.findOne({
       where: { userId },
@@ -39,23 +46,26 @@ export class CartService implements OnModuleInit {
       return cart;
     }
 
-    // Populate product data for each cart item
     const itemsWithProduct = await Promise.all(
       cart.items.map(async (cartItem) => {
-        const product = await this.productService.findOne(
-          Number(cartItem.productId),
-        );
+        const productId = Number(cartItem.productId);
+
+        if (!this.isValidProductId(cartItem.productId)) {
+          console.error(`Invalid productId: ${cartItem.productId}`); // Log invalid productId
+          return { ...cartItem, product: null }; // Optionally handle null product
+        }
+
+        const product = await this.productService.findOne(productId);
         return { ...cartItem, product };
       }),
     );
 
-    // Return updated cart with product data
     return { ...cart, items: itemsWithProduct };
   }
 
   async addItemPlusCheck(userId: number, { productId, quantity }: AddItemDto) {
     const cart = await this.cartRepo.findOne({
-      where: { userId: String(userId) }, // 👈 fix: cast to string
+      where: { userId: String(userId) }, // Cast to string to match database schema
       relations: ['items'],
     });
 
@@ -68,7 +78,7 @@ export class CartService implements OnModuleInit {
     );
 
     if (existingItem) {
-      // Update the quantity if the item already exists
+      // Update quantity if item exists
       existingItem.quantity += quantity;
       await this.itemRepo.save(existingItem);
     } else {
@@ -88,10 +98,13 @@ export class CartService implements OnModuleInit {
     quantity: number,
     cart: Cart,
   ): Promise<CartItem> {
-    // Ensure cart items are loaded
     const items = cart.items ?? [];
 
-    // Check for an existing item with the same productId
+    // Check for valid productId
+    if (!this.isValidProductId(productId)) {
+      throw new Error(`Invalid productId: ${productId}`);
+    }
+
     const existingItem = items.find((item) => item.productId === productId);
 
     if (existingItem) {
@@ -111,11 +124,13 @@ export class CartService implements OnModuleInit {
     await this.cartRepo.save(cart);
     return this.getCartByUser(userId);
   }
+
   async removeItems(userId: string) {
     const cart = await this.getCartByUser(userId);
 
     return this.cartRepo.remove(cart);
   }
+
   async removecarts(userId: string) {
     const cart = await this.getCartByUser(userId);
     const carts = await this.cartRepo.find();
@@ -130,6 +145,11 @@ export class CartService implements OnModuleInit {
     const cart = await this.getCartByUser(userId);
 
     for (const { productId, quantity } of body) {
+      if (!this.isValidProductId(productId)) {
+        console.error(`Invalid productId: ${productId}`); // Log invalid productId
+        continue; // Skip this iteration for invalid productId
+      }
+
       const existingItem = await this.itemRepo.findOne({
         where: {
           cart: { id: cart.id },
@@ -146,8 +166,9 @@ export class CartService implements OnModuleInit {
       }
     }
 
-    return this.getCartByUser(userId); // return updated cart
+    return this.getCartByUser(userId); // Return updated cart
   }
+
   createCart(createCartDto: CreateCartDto) {
     return this.cartRepo.save(createCartDto);
   }

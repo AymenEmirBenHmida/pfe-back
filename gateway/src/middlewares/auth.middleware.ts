@@ -14,7 +14,7 @@ export class AuthMiddleware implements NestMiddleware {
     { path: '/health', method: 'POST' },
     { path: '/auth/forgot-password', method: 'POST' },
     { path: '/auth/reset-password', method: 'POST' },
-    { path: '/auth/refresh-token', method: 'POST' },
+    // { path: '/auth/refresh-token', method: 'POST' },
     // etc.
   ];
   // [

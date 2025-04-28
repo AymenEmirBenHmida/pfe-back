@@ -9,6 +9,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   UnauthorizedException,
   UploadedFile,
@@ -28,6 +29,7 @@ import {
   ApiBody,
   ApiConsumes,
 } from '@nestjs/swagger';
+import { MessagePattern, Payload } from '@nestjs/microservices';
 
 @ApiTags('Users')
 @Controller('user')
@@ -120,6 +122,11 @@ export class UserController {
   remove(@Param('id') id: string) {
     return this.userService.remove(+id);
   }
+
+  // @MessagePattern('user.getUsersByIds')
+  // async getUsersByIds(@Payload() data: { ids: number[] }) {
+  //   return this.userService.getUsersByIds(data.ids);
+  // }
 
   @Post('upload')
   @ApiOperation({ summary: 'Upload profile image' })

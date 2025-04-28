@@ -23,30 +23,27 @@ export class ProductService {
     private readonly fileService: FileService,
     @Inject('KAFKA_PRODUCT_CLIENT') private readonly kafkaClient: ClientKafka,
   ) {}
-  async create(
-    createProductDto: CreateProductDto,
-    // images: Express.Multer.File[],
-  ) {
-    // const uploadPath = this.configService.get('UPLOAD_PATH')!;
 
+  // Ensure productId is valid
+  private isValidProductId(productId: any): boolean {
+    return !isNaN(Number(productId)) && Number(productId) > 0;
+  }
+
+  async create(createProductDto: CreateProductDto) {
     const newProduct = await this.productsRepository.save(createProductDto);
     if (!newProduct) throw new NotFoundException();
-    // let savedFiles = this.fileService.saveMultipleFilesMetaData(
-    //   images,
-    //   newProduct.id + '',
-    //   uploadPath,
-    // );
-    // console.log('saved files in product create service ', savedFiles);
-
     return newProduct;
-
-    // files: savedFiles,
   }
+
   async uploadProductImages(
     productId: number,
     files: Express.Multer.File[],
     imageList: AddProductImagesDto,
   ) {
+    if (!this.isValidProductId(productId)) {
+      throw new NotFoundException(`Invalid productId: ${productId}`);
+    }
+
     const product = await this.productsRepository.findOne({
       where: { id: productId },
     });
@@ -110,6 +107,7 @@ export class ProductService {
 
     return enriched;
   }
+
   async findAllFilter({
     page,
     limit,
@@ -119,7 +117,7 @@ export class ProductService {
     maxPrice,
     characteristics,
     sortBy = 'createdAt',
-    sortOrder = 'DESC', // Default: latest products
+    sortOrder = 'DESC',
   }: {
     page: number;
     limit: number;
@@ -170,7 +168,7 @@ export class ProductService {
     query.skip((page - 1) * limit).take(limit);
 
     const [items, total] = await query.getManyAndCount();
-    let images: File[];
+    let images: File[] = [];
     const enriched = await Promise.all(
       items.map(async (product) => {
         if (product.files && product.files.length > 0) {
@@ -194,13 +192,15 @@ export class ProductService {
   }
 
   async findOne(id: number) {
+    if (!this.isValidProductId(id)) {
+      throw new NotFoundException(`Invalid productId: ${id}`);
+    }
+
     const product = await this.productsRepository.findOne({ where: { id } });
     if (!product) throw new NotFoundException();
 
     const imageIds = product.files?.map(Number) || [];
     const images = await this.fileService.getFilesWithIds(imageIds);
-
-    // Optional: Remove file IDs from the response if you don't want to expose them
 
     return {
       ...product,
@@ -213,17 +213,21 @@ export class ProductService {
     updateProductDto: UpdateProductDto,
     images?: Express.Multer.File[],
   ) {
+    if (!this.isValidProductId(id)) {
+      throw new NotFoundException(`Invalid productId: ${id}`);
+    }
+
     const toBeUpdatedProduct = await this.findOne(id);
     if (!toBeUpdatedProduct) throw new NotFoundException();
-    Object.assign(toBeUpdatedProduct!, updateProductDto);
+    Object.assign(toBeUpdatedProduct, updateProductDto);
     const uploadPath = this.configService.get('UPLOAD_PATH')!;
-    const updatedProduct = await this.productsRepository.save(
-      toBeUpdatedProduct!,
-    );
+    const updatedProduct =
+      await this.productsRepository.save(toBeUpdatedProduct);
+
     if (images) {
-      let savedFiles = this.fileService.saveMultipleFilesMetaData(
+      const savedFiles = await this.fileService.saveMultipleFilesMetaData(
         images,
-        toBeUpdatedProduct!.id + '',
+        toBeUpdatedProduct.id + '',
         uploadPath + 'products',
         'Product',
       );
@@ -238,8 +242,13 @@ export class ProductService {
   }
 
   async remove(id: number) {
+    if (!this.isValidProductId(id)) {
+      throw new NotFoundException(`Invalid productId: ${id}`);
+    }
+
     const productToBeRemoved = await this.findOne(id);
     if (!productToBeRemoved) throw new NotFoundException();
+
     if (productToBeRemoved.files.length > 0) {
       await this.fileService.deleteFileAndFolder(
         +productToBeRemoved.files[0],
@@ -247,24 +256,50 @@ export class ProductService {
         'products',
       );
     }
+
     const removedProduct =
       await this.productsRepository.remove(productToBeRemoved);
     this.kafkaClient.emit('product.deleted', removedProduct.id);
     return removedProduct;
   }
-  // Function to get products by IDs
-  async findProductsByIds(productIds: string[]): Promise<Product[]> {
-    // Fetch products by their IDs
-    const products = await this.productsRepository.findByIds(productIds);
 
-    // Optional: Handle case where products are not found
-    if (products.length !== productIds.length) {
-      throw new Error('Some products not found');
+  async findProductsByIds(productIds: string[]): Promise<Product[]> {
+    try {
+      const validProductIds = productIds.filter(this.isValidProductId);
+
+      if (validProductIds.length !== productIds.length) {
+        throw new Error('Some product IDs are invalid');
+      }
+
+      const products = await this.productsRepository.findByIds(
+        validProductIds.map(Number),
+      );
+
+      // Use Promise.all to wait for async inside map
+      const productWithImages = await Promise.all(
+        products.map(async (product) => {
+          const imageIds = product.files?.map(Number) || [];
+          const images = await this.fileService.getFilesWithIds(imageIds);
+
+          return {
+            ...product,
+            images,
+          };
+        }),
+      );
+
+      return productWithImages;
+    } catch (error) {
+      console.error('Error in findProductsByIds:', error);
+      throw new Error('Failed to find products by IDs');
+    }
+  }
+
+  async decreaseStock(productId: number, quantity: number) {
+    if (!this.isValidProductId(productId)) {
+      throw new NotFoundException(`Invalid productId: ${productId}`);
     }
 
-    return products;
-  }
-  async decreaseStock(productId: number, quantity: number) {
     const product = await this.productsRepository.findOneBy({ id: productId });
     if (!product) throw new NotFoundException('Product not found');
     product.stock -= quantity;

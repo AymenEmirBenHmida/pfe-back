@@ -12,6 +12,7 @@ import {
   Query,
   Logger,
   Req,
+  BadRequestException,
 } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -120,6 +121,12 @@ export class ProductController {
     });
   }
 
+  @Get('byIds/') // <-- NO :ids here!
+  async getProductsByIds(@Query('ids') ids: string): Promise<any> {
+    console.log(ids);
+    return this.productService.findProductsByIds(ids.split(','));
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get a product by ID' })
   @ApiParam({ name: 'id', type: Number })
@@ -135,10 +142,6 @@ export class ProductController {
     return this.productService.update(+id, updateProductDto);
   }
 
-  @Get('by-ids')
-  async getProductsByIds(@Query('ids') ids: string[]): Promise<CreateProductDto[]> {
-    return this.productService.findProductsByIds(ids);
-  }
   @Delete(':id')
   @ApiOperation({ summary: 'Delete product by ID' })
   @ApiParam({ name: 'id', type: Number })

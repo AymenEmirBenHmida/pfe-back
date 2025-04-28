@@ -12,6 +12,7 @@ export class ProxyMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction) {
     // Extract service name from URL path (e.g., /auth/login -> auth)
     const pathParts = req.originalUrl.split('/');
+    console.log(req.headers, req.originalUrl);
     const service = pathParts[1];
     console.log(req.originalUrl);
     // Continue if no service is specified in the path
@@ -34,12 +35,12 @@ export class ProxyMiddleware implements NestMiddleware {
         ? req.originalUrl.replace(`/${service}`, '')
         : // Ensure leading slash is preserved
           req.originalUrl;
-     let destinationUrl = `${targetUrl}${rewrittenPath}`;
-     destinationUrl = destinationUrl.split('?')[0];
-     // Log proxy destination for debugging
-     console.log(
-       `Redirecting request: ${req.originalUrl} -> ${destinationUrl}`,
-     );
+      let destinationUrl = `${targetUrl}${rewrittenPath}`;
+      destinationUrl = destinationUrl.split('?')[0];
+      // Log proxy destination for debugging
+      console.log(
+        `Redirecting request: ${req.originalUrl} -> ${destinationUrl}`,
+      );
       // Configure proxy middleware with request handling
       const proxy = createProxyMiddleware({
         target: targetUrl,

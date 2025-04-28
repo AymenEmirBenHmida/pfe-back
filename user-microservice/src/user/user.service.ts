@@ -4,6 +4,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  OnModuleInit,
   UnauthorizedException,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -14,15 +15,38 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import { GetUserDto } from './dto/get-user.dto';
 import { ClientKafka } from '@nestjs/microservices';
+import { UserController } from './user.controller';
 
 @Injectable()
-export class UserService {
-  logger: any;
+export class UserService  {
+  private readonly logger = new Logger(UserController.name);
+
   constructor(
     @InjectRepository(User) private usersRepository: Repository<User>,
     private imageService: ImageService,
     @Inject('KAFKA_USER_CLIENT') private readonly kafkaClient: ClientKafka,
   ) {}
+  // async onModuleInit() {
+  //   this.logger.log('Registering as consumer for Kafka topics');
+
+  //   // Make sure we're subscribed to these topics
+  //   const requiredTopics = ['user.getUsersByIds'];
+
+  //   requiredTopics.forEach((topic) => {
+  //     this.logger.debug(`Subscribing to topic: ${topic}`);
+  //     this.kafkaClient.subscribeToResponseOf(topic);
+  //   });
+
+  //   try {
+  //     await this.kafkaClient.connect();
+  //     this.logger.log('Successfully connected to Kafka');
+  //   } catch (error) {
+  //     this.logger.error(
+  //       `Failed to connect to Kafka: ${error.message}`,
+  //       error.stack,
+  //     );
+  //   }
+  // }
   async create(createUserDto: CreateUserDto) {
     const createdUser = this.usersRepository.create({
       ...createUserDto,
@@ -51,6 +75,9 @@ export class UserService {
   //find all users
   async findAll() {
     return await this.usersRepository.find();
+  }
+  async getUsersByIds(ids: number[]) {
+    return await this.usersRepository.findByIds(ids);
   }
 
   //find one user by his id
