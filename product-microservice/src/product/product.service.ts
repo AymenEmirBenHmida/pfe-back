@@ -8,7 +8,12 @@ import { Repository } from 'typeorm';
 import { FileService } from 'src/file/file.service';
 import { AddProductImagesDto } from './dto/add-product-images.dto';
 import { File } from 'src/file/entities/file.entity';
-import { ClientKafka, MessagePattern, Payload, Transport } from '@nestjs/microservices';
+import {
+  ClientKafka,
+  MessagePattern,
+  Payload,
+  Transport,
+} from '@nestjs/microservices';
 
 @Injectable()
 export class ProductService {
@@ -247,11 +252,22 @@ export class ProductService {
     this.kafkaClient.emit('product.deleted', removedProduct.id);
     return removedProduct;
   }
+  // Function to get products by IDs
+  async findProductsByIds(productIds: string[]): Promise<Product[]> {
+    // Fetch products by their IDs
+    const products = await this.productsRepository.findByIds(productIds);
+
+    // Optional: Handle case where products are not found
+    if (products.length !== productIds.length) {
+      throw new Error('Some products not found');
+    }
+
+    return products;
+  }
   async decreaseStock(productId: number, quantity: number) {
     const product = await this.productsRepository.findOneBy({ id: productId });
     if (!product) throw new NotFoundException('Product not found');
     product.stock -= quantity;
     await this.productsRepository.save(product);
   }
- 
 }

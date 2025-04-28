@@ -10,6 +10,6 @@ export class CartConsumer {
   @EventPattern('product-added-to-cart')
   async handleProductAdd(@Payload() data: any) {
     const { userId, productId, quantity } = data;
-    await this.cartService.addItemPlusCheck(userId, productId, quantity);
+    await this.cartService.addItemPlusCheck(userId, { productId, quantity });
   }
 }

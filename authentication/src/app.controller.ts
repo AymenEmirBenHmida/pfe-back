@@ -137,6 +137,7 @@ export class AppController {
   async validateToken(@Req() request: Request) {
     this.logger.log('Token validation request received');
     const token = request.headers.authorization?.split(' ')[1];
+    console.log('token ', token);
     if (!token) {
       this.logger.warn('Token validation failed: No token provided');
       throw new UnauthorizedException('No token provided');

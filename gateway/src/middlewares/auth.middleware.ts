@@ -39,6 +39,7 @@ export class AuthMiddleware implements NestMiddleware {
 
     // Get token from Authorization header or cookies
     const token = this.extractToken(req);
+    console.log('toekn', token);
     if (!token) {
       return res
         .status(401)
@@ -64,7 +65,7 @@ export class AuthMiddleware implements NestMiddleware {
           { headers: { Authorization: `Bearer ${token}` } },
         ),
       );
-
+      console.log(response);
       // Add user data as headers for microservices
       req.headers['x-user-id'] = response.data.user.userId.toString();
       req.headers['x-user-role'] = response.data.user.role || 'user';

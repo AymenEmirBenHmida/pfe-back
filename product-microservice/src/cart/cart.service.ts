@@ -53,29 +53,35 @@ export class CartService implements OnModuleInit {
     return { ...cart, items: itemsWithProduct };
   }
 
-  async addItemPlusCheck(
-    userId: string,
-    productId: string,
-    quantity: number,
-  ): Promise<Cart> {
-    const user = await this.getUserInfo(+userId);
+  async addItemPlusCheck(userId: number, { productId, quantity }: AddItemDto) {
+    const cart = await this.cartRepo.findOne({
+      where: { userId: String(userId) }, // 👈 fix: cast to string
+      relations: ['items'],
+    });
 
-    if (!user) throw new Error('User not found or not authorized.');
-    const cart = await this.getCartByUser(userId);
+    if (!cart) {
+      throw new Error('Cart not found');
+    }
+
     const existingItem = cart.items.find(
       (item) => item.productId === productId,
     );
 
     if (existingItem) {
+      // Update the quantity if the item already exists
       existingItem.quantity += quantity;
       await this.itemRepo.save(existingItem);
     } else {
-      const newItem = this.itemRepo.create({ productId, quantity, cart });
+      // Insert new cart item
+      const newItem = this.itemRepo.create({
+        id: cart.id,
+        productId,
+        quantity,
+      });
       await this.itemRepo.save(newItem);
     }
-
-    return this.getCartByUser(userId);
   }
+
   async addItem(
     userId: string,
     productId: string,

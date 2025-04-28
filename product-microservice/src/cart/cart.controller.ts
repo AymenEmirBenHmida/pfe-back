@@ -31,11 +31,8 @@ export class CartController {
   @ApiParam({ name: 'userId', type: String })
   @ApiBody({ type: AddItemDto })
   addItem(@Param('userId') userId: string, @Body() body: AddItemDto) {
-    return this.cartService.addItemPlusCheck(
-      userId,
-      body.productId,
-      body.quantity,
-    );
+    console.log('user id ', userId, ', body ', body);
+    return this.cartService.addItemPlusCheck(+userId, body);
   }
 
   @Delete(':userId/item/:productId')

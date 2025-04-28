@@ -19,6 +19,7 @@ export class OrderController {
   // ✅ Create a new order
   @Post()
   async createOrder(@Body() dto: CreateOrderDto) {
+    console.log('create order :', dto);
     return this.orderService.createOrder(dto);
   }
 

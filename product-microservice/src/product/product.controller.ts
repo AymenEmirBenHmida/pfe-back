@@ -135,6 +135,10 @@ export class ProductController {
     return this.productService.update(+id, updateProductDto);
   }
 
+  @Get('by-ids')
+  async getProductsByIds(@Query('ids') ids: string[]): Promise<CreateProductDto[]> {
+    return this.productService.findProductsByIds(ids);
+  }
   @Delete(':id')
   @ApiOperation({ summary: 'Delete product by ID' })
   @ApiParam({ name: 'id', type: Number })
