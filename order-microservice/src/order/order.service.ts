@@ -63,6 +63,21 @@ export class OrderService {
     }
     return order;
   }
+  async getOrdersByProductIdAndUserId(
+    userId: number,
+    productId: number,
+  ): Promise<boolean> {
+    const orders = await this.orderRepo.find({
+      where: { userId },
+      relations: ['items'],
+    });
+    // Filter orders that contain the specified product
+    const ordersWithProduct = orders.filter((order) =>
+      order.items.some((item) => item.productId === productId),
+    );
+    if (ordersWithProduct.length > 0) return true;
+    else return false;
+  }
 
   async updateOrderStatus(id: number, status: string): Promise<Order> {
     const order = await this.orderRepo.findOneBy({ id });

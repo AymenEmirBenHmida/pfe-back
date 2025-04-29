@@ -11,6 +11,7 @@ import {
 import { OrderService } from './order.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
+import { MessagePattern, Payload } from '@nestjs/microservices';
 
 @Controller('order')
 export class OrderController {
@@ -60,5 +61,12 @@ export class OrderController {
   @Delete(':id')
   async delete(@Param('id') id: number) {
     return this.orderService.deleteOrder(id);
+  }
+  @MessagePattern('order.confirmProductOrder')
+  async getUsersByIds(@Payload() data: { userId: number; productId: number }) {
+    return this.orderService.getOrdersByProductIdAndUserId(
+      data.userId,
+      data.productId,
+    );
   }
 }

@@ -227,11 +227,13 @@ export class AppController {
   ) {
     this.logger.log('Token refresh request received');
     console.log('Cookies:', JSON.stringify(request.cookies, null, 2));
+    console.log(request.headers);
     // Get the refresh token from request body or cookie
     const refreshToken =
       body?.refreshToken ||
       request.cookies['refreshToken'] ||
-      request.cookies['RefreshToken'];
+      request.cookies['RefreshToken'] ||
+      request.headers.refreshtoken;
 
     if (!refreshToken) {
       this.logger.warn('No refresh token provided');

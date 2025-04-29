@@ -55,6 +55,9 @@ export class ProxyMiddleware implements NestMiddleware {
             if (req.headers.authorization) {
               proxyReq.setHeader('Authorization', req.headers.authorization);
             }
+            if (req.headers.RefreshToken) {
+              proxyReq.setHeader('RefreshToken', req.headers.RefreshToken);
+            }
 
             // Forward cookies - CRITICAL ADDITION
             if (req.headers.cookie) {

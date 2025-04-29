@@ -13,8 +13,9 @@ export class ReviewService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    // Subscribe to the reply topic
-    this.kafkaClient.subscribeToResponseOf('user.getUsersByIds');
+    const topics = ['user.getUsersByIds', 'order.confirmProductOrder'];
+    // Subscribe to the reply topics
+    topics.forEach((topic) => this.kafkaClient.subscribeToResponseOf(topic));
 
     try {
       await this.kafkaClient.connect();
@@ -23,9 +24,35 @@ export class ReviewService implements OnModuleInit {
       console.error(`Failed to connect to Kafka: ${error.message}`);
     }
   }
-  createReview(dto: CreateReviewDto) {
-    const review = this.repo.create(dto);
-    return this.repo.save(review);
+  async createReview(dto: CreateReviewDto) {
+    const reviewsByUser = await this.getReviewsByUserAndByProduct(
+      dto.userId,
+      dto.productId,
+    );
+    // Check order validity through Kafka
+    const validationResponse = await firstValueFrom(
+      this.kafkaClient.send('order.confirmProductOrder', {
+        productId: dto.productId,
+        userId: dto.userId,
+      }),
+    );
+    // Direct comparison without Boolean conversion
+    let valid = false;
+
+    // Handle different response formats
+    if (validationResponse === true || validationResponse === 'true') {
+      valid = true;
+    }
+    console.log(reviewsByUser, ' review BY uSER, and validity ' + valid);
+    // Check if the user has already submitted a review
+    if (reviewsByUser.length > 0 || !valid) {
+      // User already has reviews, so don't create another one
+      return null; // or throw an error, or return an appropriate message
+    } else if (reviewsByUser.length === 0 && valid) {
+      // User has no reviews yet, so create one
+      const review = this.repo.create(dto);
+      return this.repo.save(review);
+    }
   }
 
   async getReviewsByProduct(productId: number) {
@@ -54,6 +81,9 @@ export class ReviewService implements OnModuleInit {
 
   getReviewsByUser(userId: number) {
     return this.repo.find({ where: { userId } });
+  }
+  getReviewsByUserAndByProduct(userId: number, productId: number) {
+    return this.repo.find({ where: { userId, productId } });
   }
 
   async getAverageRating(productId: number) {

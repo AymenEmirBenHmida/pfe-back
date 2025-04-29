@@ -14,7 +14,7 @@ export class AuthMiddleware implements NestMiddleware {
     { path: '/health', method: 'POST' },
     { path: '/auth/forgot-password', method: 'POST' },
     { path: '/auth/reset-password', method: 'POST' },
-    // { path: '/auth/refresh-token', method: 'POST' },
+    { path: '/auth/refresh-token', method: 'POST' },
     // etc.
   ];
   // [
@@ -34,6 +34,8 @@ export class AuthMiddleware implements NestMiddleware {
   async use(req: Request, res: Response, next: NextFunction) {
     // Skip authentication for public routes
     if (this.isPublicPath(req)) {
+      console.log(req.originalUrl, ' is public');
+      console.log(req.cookies);
       return next();
     }
 
