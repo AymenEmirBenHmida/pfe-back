@@ -221,7 +221,6 @@ export class AppController {
     },
   })
   async refreshToken(
-    @Body() body: { refreshToken?: string },
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
   ) {
@@ -230,7 +229,6 @@ export class AppController {
     console.log(request.headers);
     // Get the refresh token from request body or cookie
     const refreshToken =
-      body?.refreshToken ||
       request.cookies['refreshToken'] ||
       request.cookies['RefreshToken'] ||
       request.headers.refreshtoken;
