@@ -16,9 +16,10 @@ import * as bcrypt from 'bcryptjs';
 import { GetUserDto } from './dto/get-user.dto';
 import { ClientKafka } from '@nestjs/microservices';
 import { UserController } from './user.controller';
+import { Role } from './enums/role.enum';
 
 @Injectable()
-export class UserService  {
+export class UserService {
   private readonly logger = new Logger(UserController.name);
 
   constructor(
@@ -47,6 +48,34 @@ export class UserService  {
   //     );
   //   }
   // }
+  async addImage(userId: number, file?: Express.Multer.File) {
+    const userToBeUpdated = await this.findOne(userId);
+    if (!userToBeUpdated) {
+      throw new NotFoundException(`Invalid user`);
+    }
+    Logger.log('hello');
+    Logger.log(`File received: ${JSON.stringify(file)}`);
+    if (file) {
+      // Log the file for debugging
+      Logger.log(`File received: ${JSON.stringify(file)}`);
+
+      // Create a web-accessible URL path for the frontend
+      const webPath = `/uploads/profiles/${file.filename}`;
+      if (
+        userToBeUpdated?.profileImageUrl &&
+        userToBeUpdated.profileImageUrl !== webPath
+      ) {
+        const oldImagePath = userToBeUpdated.profileImageUrl;
+        this.imageService.deletImage(oldImagePath);
+      }
+      // Store the file path in both fields for backward compatibility
+      userToBeUpdated.profileImageUrl = webPath;
+
+      Logger.log(`Storing image path as: ${webPath}, file path: ${file.path}`);
+    }
+    return this.usersRepository.save(userToBeUpdated);
+  }
+
   async create(createUserDto: CreateUserDto) {
     const createdUser = this.usersRepository.create({
       ...createUserDto,
@@ -75,6 +104,112 @@ export class UserService  {
   //find all users
   async findAll() {
     return await this.usersRepository.find();
+  }
+
+  // Advanced filtering method for users
+  async findAllFiltered({
+    page,
+    limit,
+    search,
+    role,
+    active,
+    location,
+    companyName,
+    startDate,
+    endDate,
+    sortBy = 'createdAt',
+    sortOrder = 'DESC',
+  }: {
+    page: number;
+    limit: number;
+    search?: string;
+    role?: Role;
+    active?: boolean;
+    location?: string;
+    companyName?: string;
+    startDate?: Date;
+    endDate?: Date;
+    sortBy?: string;
+    sortOrder?: string;
+  }) {
+    const query = this.usersRepository.createQueryBuilder('user');
+
+    // Search in multiple columns (name, email, phoneNumber)
+    if (search) {
+      query.andWhere(
+        '(user.name ILIKE :search OR user.email ILIKE :search OR user.phoneNumber ILIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    // Filter by role
+    if (role) {
+      query.andWhere('user.role = :role', { role });
+    }
+
+    // Filter by active status
+    if (active !== undefined) {
+      query.andWhere('user.active = :active', { active });
+    }
+
+    // Filter by location
+    if (location) {
+      query.andWhere('user.location ILIKE :location', {
+        location: `%${location}%`,
+      });
+    }
+
+    // Filter by company name
+    if (companyName) {
+      query.andWhere('user.companyName ILIKE :companyName', {
+        companyName: `%${companyName}%`,
+      });
+    }
+
+    // Date range filtering
+    if (startDate) {
+      query.andWhere('user.createdAt >= :startDate', { startDate });
+    }
+
+    if (endDate) {
+      query.andWhere('user.createdAt <= :endDate', { endDate });
+    }
+
+    // Validate sortBy field to prevent SQL injection
+    const allowedSortFields = [
+      'id',
+      'name',
+      'email',
+      'createdAt',
+      'updatedAt',
+      'role',
+    ];
+    const validSortBy = allowedSortFields.includes(sortBy)
+      ? sortBy
+      : 'createdAt';
+
+    // Apply sorting
+    query.orderBy(
+      `user.${validSortBy}`,
+      sortOrder.toUpperCase() === 'ASC' ? 'ASC' : 'DESC',
+    );
+
+    // Apply pagination
+    query.skip((page - 1) * limit).take(limit);
+
+    // Execute query and get results with count
+    const [items, total] = await query.getManyAndCount();
+
+    Logger.log(`Found ${total} users with filter criteria`);
+
+    // Return paginated results with metadata
+    return {
+      data: items,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
   async getUsersByIds(ids: number[]) {
     return await this.usersRepository.findByIds(ids);

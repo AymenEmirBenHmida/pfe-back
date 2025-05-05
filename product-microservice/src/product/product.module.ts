@@ -6,11 +6,14 @@ import { Product } from './entities/product.entity';
 import { FileModule } from 'src/file/file.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import { CategoryService } from 'src/category/category.service';
+import { CategoryModule } from 'src/category/category.module';
 
 @Module({
   controllers: [ProductController],
   providers: [ProductService],
   imports: [
+    CategoryModule,
     TypeOrmModule.forFeature([Product]),
     FileModule,
     ClientsModule.registerAsync([

@@ -2,11 +2,13 @@ import {
   BadRequestException,
   Body,
   Controller,
+  DefaultValuePipe,
   Delete,
   Get,
   InternalServerErrorException,
   Logger,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
   Query,
@@ -28,8 +30,10 @@ import {
   ApiParam,
   ApiBody,
   ApiConsumes,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { MessagePattern, Payload } from '@nestjs/microservices';
+import { Role } from './enums/role.enum';
 
 @ApiTags('Users')
 @Controller('user')
@@ -66,6 +70,38 @@ export class UserController {
   @ApiOperation({ summary: 'Find all users' })
   findAll() {
     return this.userService.findAll();
+  }
+
+  // Advanced filtering endpoint for users
+  @Get('filter')
+  async findAllFiltered(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+    @Query('search') search?: string,
+    @Query('role') role?: Role,
+    @Query('active') active?: boolean,
+    @Query('location') location?: string,
+    @Query('companyName') companyName?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('sortBy', new DefaultValuePipe('createdAt')) sortBy?: string,
+    @Query('sortOrder', new DefaultValuePipe('DESC')) sortOrder?: string,
+  ) {
+    Logger.log(`Filtering users - page: ${page}, limit: ${limit}`);
+
+    return this.userService.findAllFiltered({
+      page,
+      limit,
+      search,
+      role,
+      active: active !== undefined ? Boolean(active) : undefined,
+      location,
+      companyName,
+      startDate: startDate ? new Date(startDate) : undefined,
+      endDate: endDate ? new Date(endDate) : undefined,
+      sortBy,
+      sortOrder,
+    });
   }
 
   @Get(':id')
@@ -114,6 +150,28 @@ export class UserController {
 
     // Update the user
     return await this.userService.update(+id, updateData);
+  }
+
+  @Patch(':id/images')
+  @UseInterceptors(FileInterceptor('profileImage'))
+  @ApiOperation({ summary: 'insert user image' })
+  @ApiParam({ name: 'id', example: 1 })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        profileImage: { type: 'string', format: 'binary' },
+        name: { type: 'string', example: 'New Name' },
+      },
+    },
+  })
+  async addUserImage(
+    @Param('id') id: string,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    // Update the user
+    return await this.userService.addImage(+id, file);
   }
 
   @Delete(':id')

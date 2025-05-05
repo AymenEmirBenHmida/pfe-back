@@ -1,3 +1,4 @@
+import { CategoryService } from './../category/category.service';
 import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -21,6 +22,7 @@ export class ProductService {
     private readonly configService: ConfigService,
     @InjectRepository(Product) private productsRepository: Repository<Product>,
     private readonly fileService: FileService,
+    private readonly categoryService: CategoryService,
     @Inject('KAFKA_PRODUCT_CLIENT') private readonly kafkaClient: ClientKafka,
   ) {}
 
@@ -166,22 +168,24 @@ export class ProductService {
     );
 
     query.skip((page - 1) * limit).take(limit);
-
     const [items, total] = await query.getManyAndCount();
-    let images: File[] = [];
     const enriched = await Promise.all(
       items.map(async (product) => {
+        let images: File[] = [];
         if (product.files && product.files.length > 0) {
           images = await this.fileService.getFilesWithIds(
             product.files.map(Number),
           );
         }
+        const category = await this.categoryService.findOne(product.categoryId);
         return {
           ...product,
+          category,
           images,
         };
       }),
     );
+
     return {
       data: enriched,
       total,

@@ -9,7 +9,10 @@
     "start:gateway": "cd gateway && npm run start:dev",
     "start:notification": "cd notification-microservice && npm run start:dev",
     "start:user": "cd user-microservice && npm run start:dev",
-    "start:all": "concurrently \"npm run start:auth\" \"npm run start:gateway\" \"npm run start:notification\" \"npm run start:user\""
+    "start:product": "cd product-microservice && npm run start:dev",
+    "start:order": "cd order-microservice && npm run start:dev",
+    "start:review": "cd review-microservice && npm run start:dev",
+    "start:all": "concurrently \"npm run start:auth\" \"npm run start:gateway\" \"npm run start:notification\" \"npm run start:user\" \"npm run start:product\"\"npm run start:review\" \"npm run start:order\""
   },
   "repository": {
     "type": "git",

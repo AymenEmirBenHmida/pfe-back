@@ -7,7 +7,8 @@ import { FileModule } from 'src/file/file.module';
 
 @Module({
   controllers: [CategoryController],
-  imports: [TypeOrmModule.forFeature([Category]),FileModule],
+  imports: [TypeOrmModule.forFeature([Category]), FileModule],
+  exports: [CategoryService],
   providers: [CategoryService],
 })
 export class CategoryModule {}
