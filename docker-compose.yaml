@@ -20,17 +20,17 @@ services:
   #     KAFKA_BROKERS: kafka:9092
   #     KAFKAJS_NO_PARTITIONER_WARNING: 1
 
-  # postgresql:
-  #   image: postgres
-  #   restart: always
-  #   environment:
-  #     POSTGRES_USER: aymen
-  #     POSTGRES_PASSWORD: azert12345
-  #     POSTGRES_DB: authenticationDb
-  #   ports:
-  #     - "5432:5432"
-  #   networks:
-  #     - app-network
+  postgresql:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: aymen
+      POSTGRES_PASSWORD: azert12345
+      POSTGRES_DB: authenticationDb
+    ports:
+      - "5432:5432"
+    networks:
+      - app-network
 
   zookeeper:
     image: confluentinc/cp-zookeeper:latest

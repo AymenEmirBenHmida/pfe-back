@@ -100,11 +100,40 @@ export class OrderService {
       order.shippingAddress = dto.shippingAddress;
     }
 
-    if ((dto as any).status) {
-      order.status = (dto as any).status;
+    if (dto.status) {
+      order.status = dto.status as any;
     }
 
-    return this.orderRepo.save(order);
+    // Only allow updating items if order is still pending
+    if (dto.items && order.status === 'pending') {
+      // Remove old items
+      await this.orderItemRepo.remove(order.items);
+
+      // Create new items
+      const newItems = dto.items.map((itemDto) => {
+        const item = new OrderItem();
+        item.productId = itemDto.productId;
+        item.quantity = itemDto.quantity;
+        item.price = itemDto.price;
+        return item;
+      });
+
+      order.items = newItems;
+
+      // Recalculate amount
+      order.amount = newItems.reduce(
+        (sum, item) => sum + item.price * item.quantity,
+        0,
+      );
+    }
+
+    const updatedOrder = await this.orderRepo.save(order);
+
+    this.kafkaClient.emit('order.updated', {
+      orderId: updatedOrder.id,
+    });
+
+    return updatedOrder;
   }
 
   async deleteOrder(id: number): Promise<void> {
