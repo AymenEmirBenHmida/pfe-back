@@ -5,6 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { join } from 'path';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
+import { UserSeeder } from './seeder/user.seeder';
 
 @Module({
   imports: [
@@ -21,7 +22,7 @@ import { AuthModule } from './auth/auth.module';
         DB_PASSWORD: Joi.string().required(),
         DB_NAME: Joi.string().required(),
         PORT: Joi.number().required(),
-        KAFKA_BROKERS: Joi.string().default('localhost:9092'), 
+        KAFKA_BROKERS: Joi.string().default('localhost:9092'),
       }),
     }),
     TypeOrmModule.forRootAsync({
@@ -35,7 +36,7 @@ import { AuthModule } from './auth/auth.module';
         username: ConfigService.get('DB_USERNAME'),
         password: ConfigService.get('DB_PASSWORD'),
         database: ConfigService.get('DB_NAME'),
-        entities: [join(process.cwd(), 'dist/**/*.entity.js')],
+        entities: [join(__dirname, '**', '*.entity.{ts,js}')],
         //I will not use  synchronize true in production
         synchronize: true,
       }),
@@ -43,6 +44,6 @@ import { AuthModule } from './auth/auth.module';
     AuthModule,
   ],
   controllers: [],
-  providers: [],
+  providers: [UserSeeder],
 })
 export class AppModule {}
