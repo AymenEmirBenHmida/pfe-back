@@ -7,11 +7,13 @@ import {
   Param,
   Delete,
   Put,
+  Query,
 } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { MessagePattern, Payload } from '@nestjs/microservices';
+import { OrderFilterDto } from './dto/order-filter.dto';
 
 @Controller('order')
 export class OrderController {
@@ -24,11 +26,11 @@ export class OrderController {
     return this.orderService.createOrder(dto);
   }
 
-  // ✅ Get all orders (admin)
-  @Get()
-  async getAll() {
-    return this.orderService.getAllOrders();
-  }
+  // // ✅ Get all orders (admin)
+  // @Get()
+  // async getAll() {
+  //   return this.orderService.getAllOrders();
+  // }
 
   // ✅ Get orders by user ID
   @Get('user/:userId')
@@ -68,5 +70,9 @@ export class OrderController {
       data.userId,
       data.productId,
     );
+  }
+  @Get()
+  async getOrders(@Query() query: OrderFilterDto) {
+    return this.orderService.findAllFilteredOrders(query);
   }
 }

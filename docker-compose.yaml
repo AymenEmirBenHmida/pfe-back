@@ -22,6 +22,8 @@ services:
 
   postgresql:
     image: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     restart: always
     environment:
       POSTGRES_USER: aymen
@@ -62,3 +64,6 @@ services:
 networks:
   app-network:
     driver: bridge
+
+volumes:
+  postgres_data:

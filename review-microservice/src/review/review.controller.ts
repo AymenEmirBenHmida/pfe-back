@@ -6,10 +6,12 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { ReviewService } from './review.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
+import { ReviewFilterDto } from './dto/review-filter.dto';
 
 @Controller('review')
 export class ReviewController {
@@ -49,10 +51,14 @@ export class ReviewController {
   //   return this.service.findAll();
   // }
 
-  // @Get(':id')
-  // findOne(@Param('id') id: string) {
-  //   return this.service.findOne(+id);
-  // }
+  @Get()
+  async getOrders(@Query() query: ReviewFilterDto) {
+    return this.service.findAllFilteredReviews(query);
+  }
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.service.findOne(+id);
+  }
 
   // @Patch(':id')
   // update(@Param('id') id: string, @Body() updateReviewDto: UpdateReviewDto) {

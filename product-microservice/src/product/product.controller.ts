@@ -1,25 +1,18 @@
 import {
-  Controller,
-  Get,
-  Post,
   Body,
-  Patch,
-  Param,
+  Controller,
   Delete,
-  UploadedFile,
-  UseInterceptors,
-  UploadedFiles,
+  Get,
+  Param,
+  Patch,
+  Post,
   Query,
-  Logger,
   Req,
-  BadRequestException,
+  UploadedFiles,
+  UseInterceptors
 } from '@nestjs/common';
-import { ProductService } from './product.service';
-import { CreateProductDto } from './dto/create-product.dto';
-import { UpdateProductDto } from './dto/update-product.dto';
-import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
-import { AddProductImagesDto } from './dto/add-product-images.dto';
-import { Request } from 'express';
+import { MessagePattern, Payload, Transport } from '@nestjs/microservices';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import {
   ApiBody,
   ApiConsumes,
@@ -27,7 +20,11 @@ import {
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
-import { MessagePattern, Payload, Transport } from '@nestjs/microservices';
+import { Request } from 'express';
+import { AddProductImagesDto } from './dto/add-product-images.dto';
+import { CreateProductDto } from './dto/create-product.dto';
+import { UpdateProductDto } from './dto/update-product.dto';
+import { ProductService } from './product.service';
 
 @Controller('product')
 export class ProductController {
@@ -75,6 +72,10 @@ export class ProductController {
     };
     console.log('parsed body ', parsedlist);
     return this.productService.uploadProductImages(+id, images, parsedlist);
+  }
+  @MessagePattern('product.getProductsByIds')
+  async getUsersByIds(@Payload() data: { ids: number[] }) {
+    return this.productService.getProductsByIds(data.ids);
   }
 
   @Get()

@@ -81,7 +81,7 @@ async function bootstrap() {
   // Initialize HTTP server on configured port
   // This allows the service to handle both HTTP requests and Kafka events
   await app.listen(port);
-  logger.log(`User microservice running on port ${port}`);
+  logger.log(`Product microservice running on port ${port}`);
 }
 // Handle any errors during bootstrap process
 bootstrap().catch((err) => {

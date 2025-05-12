@@ -43,9 +43,9 @@ async function bootstrap() {
   // logger.log('Microservices started successfully');
   // Swagger set up
   const options = new DocumentBuilder()
-    .setTitle('Product API')
+    .setTitle('Order API')
     .setDescription(
-      'this is the product microservice responsible for managing products categories and carts and also files related to the entities previously mentioned.',
+      'this is the product microservice responsible for managing orders.',
     )
     .setVersion('1.0')
     .addServer('http://localhost:' + port, 'Local environment')

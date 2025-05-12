@@ -1,23 +1,26 @@
+import {
+  Inject,
+  Injectable,
+  Logger,
+  NotFoundException,
+  OnModuleInit,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import {
+  ClientKafka
+} from '@nestjs/microservices';
+import { InjectRepository } from '@nestjs/typeorm';
+import { File } from 'src/file/entities/file.entity';
+import { FileService } from 'src/file/file.service';
+import { Repository } from 'typeorm';
 import { CategoryService } from './../category/category.service';
-import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { AddProductImagesDto } from './dto/add-product-images.dto';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { ConfigService } from '@nestjs/config';
-import { InjectRepository } from '@nestjs/typeorm';
 import { Product } from './entities/product.entity';
-import { Repository } from 'typeorm';
-import { FileService } from 'src/file/file.service';
-import { AddProductImagesDto } from './dto/add-product-images.dto';
-import { File } from 'src/file/entities/file.entity';
-import {
-  ClientKafka,
-  MessagePattern,
-  Payload,
-  Transport,
-} from '@nestjs/microservices';
 
 @Injectable()
-export class ProductService {
+export class ProductService implements OnModuleInit {
   constructor(
     private readonly configService: ConfigService,
     @InjectRepository(Product) private productsRepository: Repository<Product>,
@@ -25,7 +28,28 @@ export class ProductService {
     private readonly categoryService: CategoryService,
     @Inject('KAFKA_PRODUCT_CLIENT') private readonly kafkaClient: ClientKafka,
   ) {}
+  /**
+   * Initializes Kafka connections and topic subscriptions
+   * Called when the module is initialized
+   */
+  async onModuleInit() {
+    // Make sure we're subscribed to these topics
+    const requiredTopics = [
+      'product.getProductsByIds.reply',
+      'product.getProductsByIds',
+    ];
 
+    requiredTopics.forEach((topic) => {
+      console.log('subscribed to topic', topic);
+      this.kafkaClient.subscribeToResponseOf(topic);
+    });
+
+    try {
+      await this.kafkaClient.connect();
+    } catch (error) {
+      console.log('Failed to connect to Kafka', error);
+    }
+  }
   // Ensure productId is valid
   private isValidProductId(productId: any): boolean {
     return !isNaN(Number(productId)) && Number(productId) > 0;
@@ -35,6 +59,22 @@ export class ProductService {
     const newProduct = await this.productsRepository.save(createProductDto);
     if (!newProduct) throw new NotFoundException();
     return newProduct;
+  }
+  async getProductsByIds(ids: number[]) {
+    const products = await this.productsRepository.findByIds(ids.map(Number));
+    if (!products) throw new NotFoundException();
+    const enriched = await Promise.all(
+      products.map(async (product) => {
+        const images = await this.fileService.getFilesWithIds(
+          product.files.map(Number),
+        );
+        return {
+          ...product,
+          images,
+        };
+      }),
+    );
+    return enriched;
   }
 
   async uploadProductImages(

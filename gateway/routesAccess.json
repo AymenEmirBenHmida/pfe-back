@@ -1,0 +1,121 @@
+{
+  "/product": {
+    "POST": ["ADMIN"],
+    "GET": ["ADMIN", "BUYER", "PUBLIC"]
+  },
+  "/product/byIds": {
+    "GET": ["ADMIN", "BUYER"]
+  },
+  "/product/{id}": {
+    "GET": ["ADMIN", "BUYER"],
+    "PATCH": ["ADMIN"],
+    "DELETE": ["ADMIN"]
+  },
+  "/product/{id}/images": {
+    "POST": ["ADMIN"]
+  },
+  "/category": {
+    "POST": ["ADMIN"],
+    "GET": ["ADMIN", "BUYER"]
+  },
+  "/category/{id}": {
+    "GET": ["ADMIN", "BUYER"],
+    "PATCH": ["ADMIN"],
+    "DELETE": ["ADMIN"]
+  },
+  "/category/{id}/images": {
+    "POST": ["ADMIN"]
+  },
+  "/files/upload": {
+    "POST": ["ADMIN"]
+  },
+  "/files": {
+    "GET": ["ADMIN"]
+  },
+  "/files/{entityType}/{entityId}": {
+    "GET": ["ADMIN"]
+  },
+  "/files/{id}": {
+    "DELETE": ["ADMIN"]
+  },
+  "/cart": {
+    "POST": ["ADMIN", "BUYER"],
+    "GET": ["ADMIN"],
+    "DELETE": ["ADMIN"]
+  },
+  "/cart/{userId}": {
+    "GET": ["ADMIN", "BUYER"]
+  },
+  "/cart/{id}": {
+    "GET": ["ADMIN", "BUYER"],
+    "PATCH": ["ADMIN", "BUYER"],
+    "DELETE": ["ADMIN", "BUYER"]
+  },
+  "/cart/{userId}/items": {
+    "POST": ["ADMIN", "BUYER"],
+    "DELETE": ["ADMIN", "BUYER"]
+  },
+  "/cart/{userId}/item": {
+    "POST": ["ADMIN", "BUYER"]
+  },
+  "/cart/{userId}/item/{productId}": {
+    "DELETE": ["ADMIN", "BUYER"]
+  },
+  "/order": {
+    "POST": ["ADMIN", "BUYER"],
+    "GET": ["ADMIN"]
+  },
+  "/order/user/{userId}": {
+    "GET": ["ADMIN", "BUYER"]
+  },
+  "/order/{id}": {
+    "GET": ["ADMIN", "BUYER"],
+    "PATCH": ["ADMIN"],
+    "DELETE": ["ADMIN"]
+  },
+  "/order/{id}/status/{status}": {
+    "PUT": ["ADMIN"]
+  },
+  "/review": {
+    "POST": ["ADMIN", "BUYER"],
+    "GET": ["ADMIN", "BUYER"]
+  },
+  "/review/{id}": {
+    "GET": ["ADMIN", "BUYER"],
+    "PATCH": ["ADMIN", "BUYER"],
+    "DELETE": ["ADMIN", "BUYER"]
+  },
+  "/review/product/{productId}": {
+    "GET": ["ADMIN", "BUYER"]
+  },
+  "/review/user/{userId}": {
+    "GET": ["ADMIN", "BUYER"]
+  },
+  "/review/product/{productId}/average": {
+    "GET": ["ADMIN", "BUYER"]
+  },
+  "/": {
+    "GET": ["ADMIN", "BUYER"]
+  },
+  "/auth/login": {
+    "POST": ["PUBLIC"]
+  },
+  "/auth/register": {
+    "POST": ["PUBLIC"]
+  },
+  "/health": {
+    "POST": ["PUBLIC"]
+  },
+  "/auth/forgot-password": {
+    "POST": ["PUBLIC"]
+  },
+  "/auth/reset-password": {
+    "POST": ["PUBLIC"]
+  },
+  "/auth/refresh-token": {
+    "POST": ["PUBLIC"]
+  },
+  "/product/:id": {
+    "GET": ["PUBLIC"]
+  }
+}

@@ -1,4 +1,9 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  NotFoundException,
+  OnModuleInit,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Order } from './entities/order.entity';
@@ -6,9 +11,11 @@ import { OrderItem } from './entities/order-item.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { ClientKafka } from '@nestjs/microservices';
+import { firstValueFrom } from 'rxjs';
+import { OrderFilterDto } from './dto/order-filter.dto';
 
 @Injectable()
-export class OrderService {
+export class OrderService implements OnModuleInit {
   constructor(
     @InjectRepository(Order)
     private orderRepo: Repository<Order>,
@@ -18,6 +25,25 @@ export class OrderService {
     @Inject('KAFKA_ORDER_CLIENT')
     private readonly kafkaClient: ClientKafka,
   ) {}
+
+  async onModuleInit() {
+    // List of ALL topics that this service needs to subscribe to
+    const topics = [
+      'user.getUsersByIds',
+      'order.confirmProductOrder',
+      'product.getProductsByIds',
+    ];
+
+    // Subscribe to the reply topics
+    topics.forEach((topic) => this.kafkaClient.subscribeToResponseOf(topic));
+
+    try {
+      await this.kafkaClient.connect();
+      console.log('Order service connected to Kafka');
+    } catch (error) {
+      console.error(`Failed to connect to Kafka: ${error.message}`);
+    }
+  }
 
   async createOrder(dto: CreateOrderDto): Promise<Order> {
     const order = new Order();
@@ -47,6 +73,50 @@ export class OrderService {
     });
 
     return savedOrder;
+  }
+  async findAllFilteredOrders({
+    page,
+    limit,
+    userId,
+    status,
+    minAmount,
+    maxAmount,
+    sortBy = 'createdAt',
+    sortOrder = 'DESC',
+  }: OrderFilterDto) {
+    const query = this.orderRepo
+      .createQueryBuilder('order')
+      .leftJoinAndSelect('order.items', 'item'); // Join with order items    const currentPage = page ? Number(page) : 1;
+    const currentLimit = limit ? Number(limit) : 10;
+    const currentPage = page ? Number(page) : 1;
+    if (userId !== undefined) {
+      query.andWhere('order.userId = :userId', { userId });
+    }
+
+    if (status) {
+      query.andWhere('order.status = :status', { status });
+    }
+
+    if (minAmount !== undefined) {
+      query.andWhere('order.amount >= :minAmount', { minAmount });
+    }
+
+    if (maxAmount !== undefined) {
+      query.andWhere('order.amount <= :maxAmount', { maxAmount });
+    }
+
+    query.orderBy(`order.${sortBy}`, sortOrder.toUpperCase() as 'ASC' | 'DESC');
+    query.skip((currentPage - 1) * currentLimit).take(currentLimit);
+
+    const [data, total] = await query.getManyAndCount();
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / currentLimit),
+    };
   }
 
   async getOrdersByUser(userId: number): Promise<Order[]> {
@@ -146,6 +216,42 @@ export class OrderService {
   }
 
   async getAllOrders(): Promise<Order[]> {
-    return this.orderRepo.find({ relations: ['items'] });
+    // Fetch orders with their items
+    const orders = await this.orderRepo.find({ relations: ['items'] });
+
+    // Collect all product IDs from order items
+    const productIds = orders.flatMap((order) =>
+      order.items.map((item) => item.productId),
+    );
+
+    // Remove duplicates
+    const uniqueProductIds = [...new Set(productIds)];
+
+    // Fetch product details from product service via Kafka
+    const products = await firstValueFrom(
+      this.kafkaClient.send('product.getProductsByIds', {
+        ids: uniqueProductIds,
+      }),
+    );
+
+    // Create a map for quick product lookup
+    const productMap = new Map();
+    if (Array.isArray(products)) {
+      products.forEach((product) => {
+        productMap.set(product.id, product);
+      });
+    }
+
+    // Enhance order items with product details
+    return orders.map((order) => ({
+      ...order,
+      items: order.items.map((item) => ({
+        ...item,
+        product: productMap.get(item.productId) || {
+          id: item.productId,
+          name: 'Unknown Product',
+        },
+      })),
+    }));
   }
 }
