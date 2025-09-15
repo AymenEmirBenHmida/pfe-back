@@ -25,6 +25,7 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { Category } from './entities/category.entity';
+import { CategoryFilterDto } from './dto/category-filter.dto';
 
 @Controller('category')
 export class CategoryController {
@@ -65,45 +66,9 @@ export class CategoryController {
 
   @Get()
   @ApiOperation({ summary: 'Get all categories with optional filters' })
-  @ApiQuery({
-    name: 'name',
-    required: false,
-    type: String,
-    description: 'Filter by category name',
-  })
-  @ApiQuery({
-    name: 'isActive',
-    required: false,
-    type: String,
-    enum: ['true', 'false'],
-    description: 'Filter by active status',
-  })
-  @ApiQuery({
-    name: 'page',
-    required: false,
-    type: Number,
-    description: 'Page number for pagination',
-  })
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    type: Number,
-    description: 'Limit number of results per page',
-  })
-  findAll(
-    @Query('name') name?: string,
-    @Query('isActive') isActive?: string,
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
-  ) {
-    return this.categoryService.findAllFiltered({
-      name,
-      isActive,
-      page: page ? parseInt(page) : undefined,
-      limit: limit ? parseInt(limit) : undefined,
-    });
+  findAll(@Query() filterDto: CategoryFilterDto) {
+    return this.categoryService.findAllFiltered(filterDto);
   }
-
   @Get(':id')
   @ApiOperation({ summary: 'Get a single category depending on its id' })
   @ApiQuery({

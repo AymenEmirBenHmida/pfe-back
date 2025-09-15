@@ -17,6 +17,7 @@ import { GetUserDto } from './dto/get-user.dto';
 import { ClientKafka } from '@nestjs/microservices';
 import { UserController } from './user.controller';
 import { Role } from './enums/role.enum';
+import { UserFilterDto } from './dto/filter-user.dto';
 
 @Injectable()
 export class UserService {
@@ -107,31 +108,23 @@ export class UserService {
   }
 
   // Advanced filtering method for users
-  async findAllFiltered({
-    page,
-    limit,
-    search,
-    role,
-    active,
-    location,
-    companyName,
-    startDate,
-    endDate,
-    sortBy = 'createdAt',
-    sortOrder = 'DESC',
-  }: {
-    page: number;
-    limit: number;
-    search?: string;
-    role?: Role;
-    active?: boolean;
-    location?: string;
-    companyName?: string;
-    startDate?: Date;
-    endDate?: Date;
-    sortBy?: string;
-    sortOrder?: string;
-  }) {
+  async findAllFiltered(querries: UserFilterDto) {
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      role,
+      active,
+      location,
+      companyName,
+      startDate,
+      endDate,
+      sortBy = 'createdAt',
+      sortOrder = 'DESC',
+    } = querries;
+
+    const currentPage = Math.max(Number(page) || 1, 1);
+    const currentLimit = Math.max(Number(limit) || 10, 1);
     const query = this.usersRepository.createQueryBuilder('user');
 
     // Search in multiple columns (name, email, phoneNumber)
@@ -195,7 +188,7 @@ export class UserService {
     );
 
     // Apply pagination
-    query.skip((page - 1) * limit).take(limit);
+    query.skip((currentPage - 1) * currentLimit).take(currentLimit);
 
     // Execute query and get results with count
     const [items, total] = await query.getManyAndCount();
@@ -206,9 +199,9 @@ export class UserService {
     return {
       data: items,
       total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      page: currentPage,
+      limit: currentLimit,
+      totalPages: Math.ceil(total / currentLimit),
     };
   }
   async getUsersByIds(ids: number[]) {

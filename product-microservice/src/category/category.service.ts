@@ -6,6 +6,7 @@ import { Category } from './entities/category.entity';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { FileService } from 'src/file/file.service';
+import { CategoryFilterDto } from './dto/category-filter.dto';
 
 @Injectable()
 export class CategoryService {
@@ -65,15 +66,10 @@ export class CategoryService {
 
     return enriched;
   }
-
-  async findAllFiltered(query: {
-    name?: string;
-    isActive?: string;
-    page?: number;
-    limit?: number;
-  }) {
+  async findAllFiltered(query: CategoryFilterDto) {
     const { name, isActive, page = 1, limit = 10 } = query;
-
+    const currentPage = Math.max(Number(page) || 1, 1);
+    const currentLimit = Math.max(Number(limit) || 10, 1);
     const qb = this.categoriesRepository.createQueryBuilder('category');
 
     if (name) {
@@ -82,11 +78,12 @@ export class CategoryService {
 
     if (isActive !== undefined) {
       qb.andWhere('category.isActive = :isActive', {
-        isActive: isActive === 'true',
+        isActive: isActive, // Now properly handling boolean value from DTO
       });
     }
 
-    qb.skip((page - 1) * limit).take(limit);
+    // Skip and take for pagination, with proper number values
+    qb.skip((currentPage - 1) * limit).take(currentLimit);
 
     const [data, total] = await qb.getManyAndCount();
     const enriched = await Promise.all(
@@ -98,11 +95,12 @@ export class CategoryService {
         };
       }),
     );
+
     return {
       data: enriched,
       total,
-      page,
-      limit,
+      page:currentPage,
+      limit:currentLimit,
     };
   }
 

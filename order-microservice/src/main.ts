@@ -6,7 +6,9 @@ import { ConfigService } from '@nestjs/config';
 import { HttpExceptionFilter } from './filters/http-exception.filter';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    rawBody: true, // 👈 ADD THIS OPTION
+  });
 
   // Get ConfigService instance
   const configService = app.get(ConfigService);

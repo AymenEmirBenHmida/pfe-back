@@ -60,22 +60,41 @@ export class ProductService implements OnModuleInit {
     if (!newProduct) throw new NotFoundException();
     return newProduct;
   }
-  async getProductsByIds(ids: number[]) {
-    const products = await this.productsRepository.findByIds(ids.map(Number));
-    if (!products) throw new NotFoundException();
-    const enriched = await Promise.all(
-      products.map(async (product) => {
-        const images = await this.fileService.getFilesWithIds(
-          product.files.map(Number),
+    async getProductsByIds(productIds: number[]): Promise<Product[]> {
+      try {
+        const validProductIds = productIds.filter(this.isValidProductId);
+    
+        if (validProductIds.length !== productIds.length) {
+          throw new Error('Some product IDs are invalid');
+        }
+    
+        const products = await this.productsRepository.findByIds(
+          validProductIds.map(Number),
         );
-        return {
-          ...product,
-          images,
-        };
-      }),
-    );
-    return enriched;
-  }
+    
+        // Use Promise.all to wait for async inside map
+        const productWithImagesAndCategories = await Promise.all(
+          products.map(async (product) => {
+            const imageIds = product.files?.map(Number) || [];
+            const images = await this.fileService.getFilesWithIds(imageIds);
+            
+            // Get category information
+            const category = await this.categoryService.findOne(product.categoryId);
+    
+            return {
+              ...product,
+              category,
+              images,
+            };
+          }),
+        );
+    
+        return productWithImagesAndCategories;
+      } catch (error) {
+        console.error('Error in findProductsByIds:', error);
+        throw new Error('Failed to find products by IDs');
+      }
+    }
 
   async uploadProductImages(
     productId: number,

@@ -4,10 +4,10 @@
     "GET": ["ADMIN", "BUYER", "PUBLIC"]
   },
   "/product/byIds": {
-    "GET": ["ADMIN", "BUYER"]
+    "GET": ["ADMIN", "BUYER", "PUBLIC"]
   },
   "/product/{id}": {
-    "GET": ["ADMIN", "BUYER"],
+    "GET": ["ADMIN", "BUYER", "PUBLIC"],
     "PATCH": ["ADMIN"],
     "DELETE": ["ADMIN"]
   },
@@ -16,10 +16,10 @@
   },
   "/category": {
     "POST": ["ADMIN"],
-    "GET": ["ADMIN", "BUYER"]
+    "GET": ["ADMIN", "BUYER", "PUBLIC"]
   },
   "/category/{id}": {
-    "GET": ["ADMIN", "BUYER"],
+    "GET": ["ADMIN", "BUYER", "PUBLIC"],
     "PATCH": ["ADMIN"],
     "DELETE": ["ADMIN"]
   },
@@ -28,6 +28,9 @@
   },
   "/files/upload": {
     "POST": ["ADMIN"]
+  },
+    "/recommend/for-user/{id}": {
+    "GET": ["BUYER", "ADMIN"]
   },
   "/files": {
     "GET": ["ADMIN"]
@@ -65,6 +68,28 @@
     "POST": ["ADMIN", "BUYER"],
     "GET": ["ADMIN"]
   },
+  "/order/create-checkout-session": {
+    "POST": ["ADMIN", "BUYER"]
+  },
+  "/order/by-session/{sessionId}": {
+    "GET": ["ADMIN", "BUYER"]
+  },
+  "/dashboard/stats": {
+    "POST": ["ADMIN", "BUYER"],
+    "GET": ["ADMIN", "BUYER"]
+  },
+  "/dashboard/yearly-earnings": {
+    "POST": ["ADMIN", "BUYER"],
+    "GET": ["ADMIN", "BUYER"]
+  },
+  "/dashboard/category-traffic": {
+    "POST": ["ADMIN", "BUYER"],
+    "GET": ["ADMIN", "BUYER"]
+  },
+  "/dashboard/full": {
+    "POST": ["ADMIN", "BUYER"],
+    "GET": ["ADMIN", "BUYER"]
+  },
   "/order/user/{userId}": {
     "GET": ["ADMIN", "BUYER"]
   },
@@ -78,29 +103,32 @@
   },
   "/review": {
     "POST": ["ADMIN", "BUYER"],
-    "GET": ["ADMIN", "BUYER"]
+    "GET": ["ADMIN", "BUYER", "PUBLIC"]
   },
   "/review/{id}": {
-    "GET": ["ADMIN", "BUYER"],
+    "GET": ["ADMIN", "BUYER", "PUBLIC"],
     "PATCH": ["ADMIN", "BUYER"],
     "DELETE": ["ADMIN", "BUYER"]
   },
   "/review/product/{productId}": {
-    "GET": ["ADMIN", "BUYER"]
+    "GET": ["ADMIN", "BUYER", "PUBLIC"]
   },
   "/review/user/{userId}": {
     "GET": ["ADMIN", "BUYER"]
   },
   "/review/product/{productId}/average": {
-    "GET": ["ADMIN", "BUYER"]
+    "GET": ["ADMIN", "BUYER", "PUBLIC"]
   },
   "/": {
-    "GET": ["ADMIN", "BUYER"]
+    "GET": ["ADMIN", "BUYER", "PUBLIC"]
   },
   "/auth/login": {
     "POST": ["PUBLIC"]
   },
   "/auth/register": {
+    "POST": ["PUBLIC"]
+  },
+  "/logout": {
     "POST": ["PUBLIC"]
   },
   "/health": {
@@ -117,5 +145,32 @@
   },
   "/product/:id": {
     "GET": ["PUBLIC"]
+  },
+  "/user/current": {
+    "GET": ["ADMIN", "BUYER"]
+  },
+  "/user": {
+    "POST": ["ADMIN"],
+    "GET": ["ADMIN"]
+  },
+  "/user/filter": {
+    "GET": ["ADMIN"]
+  },
+  "/users/filter": {
+    "GET": ["ADMIN"]
+  },
+  "/filter": {
+    "GET": ["ADMIN"]
+  },
+  "/user/{id}": {
+    "GET": ["ADMIN", "BUYER"],
+    "PATCH": ["ADMIN", "BUYER"],
+    "DELETE": ["ADMIN"]
+  },
+  "/user/{id}/images": {
+    "PATCH": ["ADMIN", "BUYER"]
+  },
+  "/user/upload": {
+    "POST": ["ADMIN", "BUYER"]
   }
 }

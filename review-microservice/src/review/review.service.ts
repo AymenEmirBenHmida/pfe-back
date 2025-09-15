@@ -57,7 +57,7 @@ export class ReviewService implements OnModuleInit {
     // Check if the user has already submitted a review
     if (reviewsByUser.length > 0 || !valid) {
       // User already has reviews, so don't create another one
-      return null; // or throw an error, or return an appropriate message
+      return {hasAlready: true}; // or throw an error, or return an appropriate message
     } else if (reviewsByUser.length === 0 && valid) {
       // User has no reviews yet, so create one
       const review = this.repo.create(dto);

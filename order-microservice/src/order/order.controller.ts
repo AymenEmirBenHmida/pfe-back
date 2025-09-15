@@ -8,6 +8,8 @@ import {
   Delete,
   Put,
   Query,
+  Req,
+  RawBodyRequest,
 } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -37,7 +39,30 @@ export class OrderController {
   async getByUser(@Param('userId') userId: number) {
     return this.orderService.getOrdersByUser(userId);
   }
-
+  @Post('create-checkout-session')
+  async createCheckoutSession(
+    // 👈 FIX 4: Add shippingAddress to the body
+    @Body() body: { items: any[]; userId: number; shippingAddress: string },
+  ) {
+    return this.orderService.createCheckoutSession(
+      body.items,
+      body.userId,
+      body.shippingAddress,
+    );
+  }
+  // ✅ Handle incoming webhooks from Stripe
+  @Post('stripe-webhook')
+  async handleStripeWebhook(@Req() req: RawBodyRequest<Request>) {
+    // This now works because @Req, RawBodyRequest, and Request are imported
+    return this.orderService.handleStripeWebhook(
+      req.rawBody!,
+      req.headers['stripe-signature'],
+    );
+  }
+  @Get('by-session/:sessionId') // 👈 ADD THIS NEW ENDPOINT
+  async getBySessionId(@Param('sessionId') sessionId: string) {
+    return this.orderService.getOrderBySessionId(sessionId);
+  }
   // ✅ Get a single order by ID
   @Get(':id')
   async getById(@Param('id') id: number) {

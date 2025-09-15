@@ -34,6 +34,7 @@ import {
 } from '@nestjs/swagger';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { Role } from './enums/role.enum';
+import { UserFilterDto } from './dto/filter-user.dto';
 
 @ApiTags('Users')
 @Controller('user')
@@ -74,34 +75,9 @@ export class UserController {
 
   // Advanced filtering endpoint for users
   @Get('filter')
-  async findAllFiltered(
-    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
-    @Query('search') search?: string,
-    @Query('role') role?: Role,
-    @Query('active') active?: boolean,
-    @Query('location') location?: string,
-    @Query('companyName') companyName?: string,
-    @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string,
-    @Query('sortBy', new DefaultValuePipe('createdAt')) sortBy?: string,
-    @Query('sortOrder', new DefaultValuePipe('DESC')) sortOrder?: string,
-  ) {
-    Logger.log(`Filtering users - page: ${page}, limit: ${limit}`);
-
-    return this.userService.findAllFiltered({
-      page,
-      limit,
-      search,
-      role,
-      active: active !== undefined ? Boolean(active) : undefined,
-      location,
-      companyName,
-      startDate: startDate ? new Date(startDate) : undefined,
-      endDate: endDate ? new Date(endDate) : undefined,
-      sortBy,
-      sortOrder,
-    });
+  async findAllFiltered(@Query() querries: UserFilterDto) {
+    console.log(querries);
+    return this.userService.findAllFiltered(querries);
   }
 
   @Get(':id')

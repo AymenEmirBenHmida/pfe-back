@@ -13,6 +13,7 @@ export enum OrderStatus {
   CANCELLED = 'cancelled',
   DELIVERED = 'delivered',
   SHIPPED = 'shipped',
+  PENDING_PAYMENT="pending_payment",
 }
 
 @Entity()
@@ -22,7 +23,8 @@ export class Order {
 
   @Column()
   userId: number;
-
+  @Column({ type: 'varchar', nullable: true, unique: true }) // 👈 ADD THIS COLUMN
+  stripeSessionId: string;
   @Column()
   shippingAddress: string;
 

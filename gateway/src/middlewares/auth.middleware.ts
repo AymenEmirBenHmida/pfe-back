@@ -63,6 +63,16 @@ export class AuthMiddleware implements NestMiddleware {
       return next();
     }
 
+    // Get the cleaned path without first segment and query parameters
+    const cleanedPath = this.getPathWithoutFirstSegment(originalPath);
+    console.log(`Cleaned path: ${cleanedPath}`);
+
+    // Check if the route is public based on JSON configuration
+    if (this.isPublicRoute(cleanedPath, method)) {
+      console.log(`${cleanedPath} is configured as PUBLIC, allowing access`);
+      return next();
+    }
+
     // Check if it's a public path from the original configuration
     if (this.isPublicPath(req)) {
       console.log(`${originalPath} is in public paths list, allowing access`);
@@ -105,17 +115,11 @@ export class AuthMiddleware implements NestMiddleware {
       // Add user data as headers for microservices
       req.headers['x-user-id'] = userId;
       req.headers['x-user-role'] = userRole;
-      console.log(this.getPathWithoutFirstSegment(originalPath));
+
       // Check role-based access in the JSON configuration
-      if (
-        !this.hasRoleAccess(
-          this.getPathWithoutFirstSegment(originalPath),
-          method,
-          userRole,
-        )
-      ) {
+      if (!this.hasRoleAccess(cleanedPath, method, userRole)) {
         console.log(
-          `Role ${userRole} does not have access to ${method} ${originalPath}`,
+          `Role ${userRole} does not have access to ${method} ${cleanedPath}`,
         );
         return res.status(403).json({
           message:
@@ -125,13 +129,32 @@ export class AuthMiddleware implements NestMiddleware {
 
       // User has proper role access, continue
       console.log(
-        `Access granted for ${method} ${originalPath} to role ${userRole}`,
+        `Access granted for ${method} ${cleanedPath} to role ${userRole}`,
       );
       next();
     } catch (error) {
       console.error('Auth validation error:', error.message);
       return res.status(401).json({ message: 'Unauthorized - Invalid token' });
     }
+  }
+
+  private isPublicRoute(path: string, method: string): boolean {
+    // Check direct route configuration
+    const config = this.findRouteConfig(path, method);
+    if (config && config.includes('PUBLIC')) {
+      return true;
+    }
+
+    // Check parameterized routes
+    const normalizedPath = this.findMatchingRoute(path);
+    if (normalizedPath) {
+      const paramConfig = this.routeAccess[normalizedPath]?.[method];
+      if (paramConfig && paramConfig.includes('PUBLIC')) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   private isFileAccessPath(path: string, method: string): boolean {
@@ -193,12 +216,14 @@ export class AuthMiddleware implements NestMiddleware {
   ): boolean {
     // First try direct match
     let config = this.findRouteConfig(requestPath, method);
+    console.log('Request path:', requestPath, ', method:', method);
 
     // If no direct match, try to match with path parameters
     if (!config) {
       const normalizedPath = this.findMatchingRoute(requestPath);
       if (normalizedPath) {
         config = this.routeAccess[normalizedPath]?.[method];
+        console.log(`Found parameterized route: ${normalizedPath}`);
       }
     }
 
@@ -212,6 +237,7 @@ export class AuthMiddleware implements NestMiddleware {
     const hasAccess = config.includes(role) || config.includes('PUBLIC');
     console.log(
       `Role ${role} access to ${method} ${requestPath}: ${hasAccess ? 'allowed' : 'denied'}`,
+      `Config: [${config.join(', ')}]`,
     );
     return hasAccess;
   }
@@ -281,6 +307,11 @@ export class AuthMiddleware implements NestMiddleware {
   private getPathWithoutFirstSegment(path: string): string {
     const cleanPath = path.split('?')[0]; // Remove query params
     const segments = cleanPath.split('/').filter(Boolean);
+
+    if (segments.length === 0) {
+      return '/';
+    }
+
     segments.shift(); // remove the first segment
     return '/' + segments.join('/');
   }

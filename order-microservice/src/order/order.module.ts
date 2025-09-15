@@ -6,6 +6,8 @@ import { Order } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { DashboardController } from './dashboard.controller';
+import { DashboardService } from './dashboard.service';
 
 @Module({
   imports: [
@@ -39,7 +41,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       },
     ]),
   ],
-  controllers: [OrderController],
-  providers: [OrderService],
+  controllers: [OrderController,DashboardController],
+  providers: [OrderService,DashboardService],
 })
 export class OrderModule {}
