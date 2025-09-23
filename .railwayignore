@@ -1,0 +1,15 @@
+# Ignore root package.json to prevent Railway from trying to deploy the root
+package.json
+docker-compose.yaml
+.env
+node_modules/
+data/
+
+# Only deploy individual microservices
+!authentication/
+!gateway/
+!user-microservice/
+!product-microservice/
+!order-microservice/
+!review-microservice/
+!notification-microservice/

@@ -1,8 +1,8 @@
 {
   "name": "tek-list-api",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Microservices orchestrator for local development only",
+  "private": true,
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start:auth": "cd authentication && npm run start:dev",
@@ -28,5 +28,8 @@
   "homepage": "https://bitbucket.org/anypli/tek-list-api#readme",
   "devDependencies": {
     "concurrently": "^9.1.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
