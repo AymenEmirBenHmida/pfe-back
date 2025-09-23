@@ -1,0 +1,19 @@
+[build]
+builder = "NIXPACKS"
+
+[build.nixpacksConfig]
+nixPkgs = ["nodejs", "npm"]
+
+[build.nixpacksConfig.phases.setup]
+nixPkgs = ["nodejs", "npm"]
+
+[build.nixpacksConfig.phases.install]
+cmd = "npm install"
+
+[build.nixpacksConfig.phases.build]
+cmd = "npm run build"
+
+[deploy]
+startCommand = "npm run start:prod"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
