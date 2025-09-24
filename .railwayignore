@@ -1,9 +1,0 @@
-# Ignore everything in root except microservice folders
-*
-!authentication/
-!gateway/
-!user-microservice/
-!product-microservice/
-!order-microservice/
-!review-microservice/
-!notification-microservice/
