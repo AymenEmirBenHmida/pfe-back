@@ -1,129 +1,24 @@
 services:
-  authentication:
-    depends_on:
-      - postgresql
-      - kafka
-    build:
-      context: ./authentication
-      dockerfile: Dockerfile
-      target: production
-    ports:
-      - "3001:3005"
-    env_file:
-      - ./authentication/.env
-    networks:
-      - app-network
-    environment:
-      KAFKA_BROKERS: kafka:9092
-      KAFKAJS_NO_PARTITIONER_WARNING: 1
-
-  gateway:
-    depends_on:
-      - postgresql
-      - kafka
-    build:
-      context: ./gateway
-      dockerfile: Dockerfile
-      target: production
-    ports:
-      - "3002:3006"
-    env_file:
-      - ./gateway/.env
-    networks:
-      - app-network
-    environment:
-      KAFKA_BROKERS: kafka:9092
-      KAFKAJS_NO_PARTITIONER_WARNING: 1
-
-  user-microservice:
-    depends_on:
-      - postgresql
-      - kafka
-    build:
-      context: ./user-microservice
-      dockerfile: Dockerfile
-      target: production
-    ports:
-      - "3003:3007"
-    env_file:
-      - ./user-microservice/.env
-    networks:
-      - app-network
-    environment:
-      KAFKA_BROKERS: kafka:9092
-      KAFKAJS_NO_PARTITIONER_WARNING: 1
-
-  product-microservice:
-    depends_on:
-      - postgresql
-      - kafka
-    build:
-      context: ./product-microservice
-      dockerfile: Dockerfile
-      target: production
-    ports:
-      - "3004:3008"
-    env_file:
-      - ./product-microservice/.env
-    networks:
-      - app-network
-    environment:
-      KAFKA_BROKERS: kafka:9092
-      KAFKAJS_NO_PARTITIONER_WARNING: 1
-
-  order-microservice:
-    depends_on:
-      - postgresql
-      - kafka
-    build:
-      context: ./order-microservice
-      dockerfile: Dockerfile
-      target: production
-    ports:
-      - "3005:3009"
-    env_file:
-      - ./order-microservice/.env
-    networks:
-      - app-network
-    environment:
-      KAFKA_BROKERS: kafka:9092
-      KAFKAJS_NO_PARTITIONER_WARNING: 1
-
-  review-microservice:
-    depends_on:
-      - postgresql
-      - kafka
-    build:
-      context: ./review-microservice
-      dockerfile: Dockerfile
-      target: production
-    ports:
-      - "3006:3010"
-    env_file:
-      - ./review-microservice/.env
-    networks:
-      - app-network
-    environment:
-      KAFKA_BROKERS: kafka:9092
-      KAFKAJS_NO_PARTITIONER_WARNING: 1
-
-  notification-microservice:
-    depends_on:
-      - postgresql
-      - kafka
-    build:
-      context: ./notification-microservice
-      dockerfile: Dockerfile
-      target: production
-    ports:
-      - "3007:3011"
-    env_file:
-      - ./notification-microservice/.env
-    networks:
-      - app-network
-    environment:
-      KAFKA_BROKERS: kafka:9092
-      KAFKAJS_NO_PARTITIONER_WARNING: 1
+  # authentication:
+  #   depends_on:
+  #     - postgresql
+  #     - kafka
+  #   build:
+  #     context: ./authentication
+  #     dockerfile: Dockerfile
+  #     target: development
+  #   command: npx nest start --watch authentication
+  #   ports:
+  #     - "3001:3005"
+  #   env_file:
+  #     - ./authentication/.env
+  #   volumes:
+  #     - ./authentication:/authentication
+  #   networks:
+  #     - app-network
+  #   environment:
+  #     KAFKA_BROKERS: kafka:9092
+  #     KAFKAJS_NO_PARTITIONER_WARNING: 1
 
   postgresql:
     image: postgres
@@ -154,8 +49,8 @@ services:
     depends_on:
       - zookeeper
     ports:
-      - "9092:9092"
-      - "29092:29092"
+      - "9092:9092" # Internal Kafka port
+      - "29092:29092" # Port for external clients
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181

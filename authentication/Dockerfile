@@ -23,6 +23,6 @@ COPY package-lock.json ./
 
 RUN npm install --only=production
 
-COPY --from=development /authentication/src/app/dist ./dist
+COPY --from=development /authentication/dist ./dist
 
 CMD ["node", "dist/main"]

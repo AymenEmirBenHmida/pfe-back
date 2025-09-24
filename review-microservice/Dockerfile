@@ -1,6 +1,6 @@
 FROM node:alpine as development
 
-WORKDIR /gateway
+WORKDIR /review-microservice
 
 COPY package.json ./
 COPY package-lock.json ./
@@ -16,13 +16,13 @@ FROM node:alpine as production
 ARG NODE_ENV=production
 ENV NODE_ENV=${NODE_ENV}
 
-WORKDIR /gateway
+WORKDIR /review-microservice
 
 COPY package.json ./
 COPY package-lock.json ./
 
 RUN npm install --only=production
 
-COPY --from=development /gateway/dist ./dist
+COPY --from=development /review-microservice/dist ./dist
 
 CMD ["node", "dist/main"]
